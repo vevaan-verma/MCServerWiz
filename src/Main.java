@@ -8,6 +8,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Scanner;
 
@@ -17,20 +18,18 @@ public class Main {
     private static final String[] FORBIDDEN_FILE_NAMES = {"CON", "PRN", "AUX", "NUL",
             "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM0",
             "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", "LPT0"};
-    private static final int MEGABIT_FACTOR = 1024;
+    private static final int BINARY_FACTOR = 1024;
 
     public static void main(String[] args) {
 
         Scanner console = new Scanner(System.in);
 
         String serverFolderName = getServerFolderName(console);
-        String client = getClient(console);
+        Client client = getClient(console);
         String version = getVersion(console, client);
         int ramAlloc = getRamAlloc(console);
 
-        String jarName = client + "-" + version + ".jar";
-
-        String jarPath = getServerJar(jarName, client, version, serverFolderName);
+        String jarName = getServerJar(client, version, serverFolderName);
         createBat(jarName, client, serverFolderName, ramAlloc);
         runBat(serverFolderName);
 
@@ -42,10 +41,15 @@ public class Main {
         }
 
         acceptEula(console, serverFolderName);
-        setMOTD("goated server", serverFolderName);
+        setMOTD(getMOTD(console), serverFolderName);
+
+        printCompletedMessage();
 
     }
 
+    //
+
+    // region Step 1: Server Name
     private static String getServerFolderName(Scanner console) {
 
         System.out.println("-- Step 1: Server name -- ");
@@ -65,6 +69,7 @@ public class Main {
 
         }
 
+        System.out.println("\n** Your server's folder will be named \"" + output + "\" **\n");
         return output;
 
     }
@@ -85,44 +90,48 @@ public class Main {
         return true;
 
     }
+    //endregion
 
-    //private static String getServerJar(String client, String version)
-    private static String getClient(Scanner console) {
+    // region Step 2: Client
+    private static Client getClient(Scanner console) {
 
         System.out.println("-- Step 2: Client version --");
         System.out.println("Please type the server client you would like to use");
         System.out.println("\t[1] Paper: Recommended default, has support for plugins");
         System.out.println("\t[2] Forge: Allows Forge modes (no native plugin support)");
         System.out.println("\t[3] Fabric: Allows Fabric modes (no native plugin support)");
-        System.out.println("\t[4] Vanilla: Plain Minecraft (no native plugin support). It is advised to use Paper instead: it is the same thing but with significant performance improvements.");
+        System.out.println("\t[4] Vanilla: Plain Minecraft (no native plugin support). \n\t\t(It is advised to use Paper instead of vanilla for performance.)");
 
-        String output = "";
+        Client client = null; // initialize client to null
 
-        while (output.isEmpty()) {
+        while (client == null) {
 
             System.out.print("\nClient: ");
             String input = console.nextLine();
 
-            output = switch (input) {
+            client = switch (input) {
 
-                case "1" -> "paper";
-                case "2" -> "forge";
-                case "3" -> "fabric";
-                case "4" -> "vanilla";
-                default -> "";
+                case "1" -> Client.paper;
+                case "2" -> Client.forge;
+                case "3" -> Client.fabric;
+                case "4" -> Client.vanilla;
+                default -> null;
 
             };
 
-            if (output.isEmpty())
+            if (client == null)
                 System.out.println("Invalid input, please try again");
 
         }
 
-        return output;
+        System.out.println("\n** Your server will run on " + client.name() + " **\n");
+        return client;
 
     }
+    //endregion
 
-    private static String getVersion(Scanner console, String client) {
+    // region Step 3: Version
+    private static String getVersion(Scanner console, Client client) {
 
         System.out.println("-- Step 3: Client version --");
         System.out.println("Please type the name of the minecraft version you want to use");
@@ -143,10 +152,13 @@ public class Main {
 
         }
 
+        System.out.println("\n** Your server will run on Minecraft " + output + " **\n");
         return output;
 
     }
+    //endregion
 
+    // region Step 4: Ram Allocation
     private static int getRamAlloc(Scanner console) {
 
         System.out.println("-- Step 4: Ram allocation --");
@@ -156,12 +168,13 @@ public class Main {
         System.out.println("\tAllocate more memory for servers with many mods or players. Increase/decrease later as needed.");
 
         int output = 0;
+        float memory = 0;
 
         while (output == 0) {
 
             System.out.print("\nMemory allocation (in gigabytes): ");
             String input = console.nextLine();
-            float memory = 0;
+
 
             try {
 
@@ -174,127 +187,22 @@ public class Main {
 
             }
 
-            // cast float to int and convert gigabytes to megabits
-            output = (int) memory * MEGABIT_FACTOR;
+            // cast float to int and convert gigabytes to megabytes (binary)
+            output = (int) (memory * BINARY_FACTOR);
 
             if (output == 0)
                 System.out.println("Invalid input, please try again");
 
         }
 
+        System.out.println("\n** Your server will use " + memory + " gigabytes of ram when active **");
+        System.out.println("\t\t(" + output + " binary megabytes)\n");
         return output;
 
     }
+    //endregion
 
-
-    private static boolean testVersion(String client, String version) {
-
-        // url: https://mcutils.com/api/server-jars/{client}/{version}/exists
-        String url = "https://mcutils.com/api/server-jars/" + client + "/" + version + "/download";
-        System.out.print(url);
-
-        try {
-
-            URL testURL = URI.create(url).toURL(); // create a URL object from the string
-            HttpURLConnection huc = (HttpURLConnection) testURL.openConnection(); // open a connection to the URL
-            huc.setRequestMethod("GET"); // set the request method to GET
-            huc.connect(); // connect to the URL
-
-            int responseCode = huc.getResponseCode(); // get the response code
-
-            if (responseCode == 200) { // if the response code is 200, the version exists
-
-                System.out.println("Version " + version + " for client " + client + " exists.");
-                return true; // return true if the version exists
-
-            } else {
-
-                System.out.println("Version " + version + " for client " + client + " does not exist.");
-                return false; // return false if the version does not exist
-
-            }
-        } catch (Exception e) {
-
-            System.err.println("Error checking version: " + e.getMessage()); // output error message
-            return false;
-
-        }
-    }
-
-    // returns the path to the server jar file
-    private static String getServerJar(String jarName, String client, String version, String serverFolderName) {
-
-        // url: https://mcutils.com/api/server-jars/{client}/{version}/download
-        String url = "https://mcutils.com/api/server-jars/" + client + "/" + version + "/download";
-        String jarPath = serverFolderName + "/" + jarName;
-
-        try {
-
-            Files.createDirectories(Paths.get(serverFolderName)); // make sure the directory exists
-            InputStream in = URI.create(url).toURL().openStream(); // open the input stream from the URL
-            Files.copy(in, Paths.get(jarPath), java.nio.file.StandardCopyOption.REPLACE_EXISTING); // copy the input stream to the file; replace if it exists already
-            return jarPath; // return the path to the jar file
-
-        } catch (Exception e) {
-
-            System.err.println("Error downloading server jar: " + e.getMessage()); // output error message
-            return null;
-
-        }
-    }
-
-    private static void createBat(String jarName, String client, String serverFolderName, int ramAlloc) {
-
-        // alloc greater than 12gb has different flags
-        // credit: https://flags.sh/
-        boolean isLargeAlloc = ramAlloc >= 12 * MEGABIT_FACTOR;
-        System.out.println(ramAlloc + "MB allocated to the server");
-
-        // create a run.bat file to start the server
-        String runBatContent = "java -Xms" + ramAlloc + "M -Xmx" + ramAlloc + "M --add-modules=jdk.incubator.vector -XX:+UseG1GC " +
-                "-XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions " +
-                "-XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 " +
-                "-XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 " +
-                "-XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem " +
-                "-XX:MaxTenuringThreshold=1 -Dusing.aikars.flags=https://mcflags.emc.gs -Daikars.new.flags=true " +
-                "-XX:G1NewSizePercent=" + (isLargeAlloc ? 40 : 30) + " -XX:G1MaxNewSizePercent=" + (isLargeAlloc ? 50 : 40) + " -XX:G1HeapRegionSize=" + (isLargeAlloc ? 16 : 8)
-                + "M -XX:G1ReservePercent=" + (isLargeAlloc ? 15 : 20) + " -jar " + jarName + (client.equalsIgnoreCase("forge") ? " --installServer" : "");
-
-        try {
-
-            Files.write(Paths.get(serverFolderName, "run.bat"), runBatContent.getBytes()); // write the content to run.bat
-
-        } catch (Exception e) {
-
-            System.err.println("Error creating run.bat: " + e.getMessage()); // output error message
-
-        }
-    }
-
-    private static void runBat(String serverFolderName) {
-
-        // run the run.bat file
-        try {
-
-            ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "start", "run.bat");
-            pb.directory(Paths.get(serverFolderName).toFile()); // set the working directory to the server folder so the JAR file can be found
-            Process process = pb.start(); // start the process
-
-            int exitCode = process.waitFor(); // wait for the process to finish
-            System.out.println("Exit code: " + exitCode); // output the exit code
-
-        } catch (IOException e) {
-
-            System.err.println("Error running run.bat: " + e.getMessage()); // output error message
-
-        } catch (InterruptedException e) {
-
-            Thread.currentThread().interrupt(); // restore the interrupted status
-            System.err.println("Process was interrupted: " + e.getMessage()); // output error message
-
-        }
-    }
-
+    //region Step 5: EULA
     private static boolean waitForEULA(String serverFolderName) {
 
         System.out.println("-- Step 5: EULA --");
@@ -356,11 +264,146 @@ public class Main {
             Files.write(path, lines); // write the modified lines back to the file
             System.out.println("EULA accepted.");
 
-            printCompletedMessage();
-
         } catch (IOException e) {
 
             System.err.println("Error writing to eula.txt: " + e.getMessage()); // output error message
+
+        }
+    }
+    //endregion
+
+    // region Step 6: MOTD
+    private static String getMOTD(Scanner console) {
+
+        System.out.println("-- Step 6: Server description (MOTD) --");
+        System.out.println("You may set a MOTD description that players will see in their server browser");
+        System.out.println("Visit this link to learn how to custom format your MOTD: https://minecraft.fandom.com/wiki/Formatting_codes#Use_in_server.properties_and_pack.mcmeta");
+        System.out.println("Press enter to skip a line. Type \"DONE\" to exit.");
+
+        System.out.println("\nType your MOTD below:");
+
+        String input = "";
+        StringBuilder output = new StringBuilder();
+
+        while (!input.equalsIgnoreCase("DONE")) {
+
+            input = console.nextLine();
+
+            if (!input.equalsIgnoreCase("DONE"))
+                output.append(input).append("\\n");
+            else
+                output = new StringBuilder(output.substring(0, output.length() - 2)); //remove the final extra \n
+
+        }
+
+        return output.toString();
+
+    }
+    //endregion
+
+    private static boolean testVersion(Client client, String version) {
+
+        // url: https://mcutils.com/api/server-jars/{client}/{version}/exists
+        String url = "https://mcutils.com/api/server-jars/" + client.toString() + "/" + version + "/download";
+
+        try {
+
+            URL testURL = URI.create(url).toURL(); // create a URL object from the string
+            HttpURLConnection huc = (HttpURLConnection) testURL.openConnection(); // open a connection to the URL
+            huc.setRequestMethod("GET"); // set the request method to GET
+            huc.connect(); // connect to the URL
+
+            int responseCode = huc.getResponseCode(); // get the response code
+
+            if (responseCode == 200) { // if the response code is 200, the version exists
+
+                System.out.println("Version " + version + " for client " + client.toString() + " exists.");
+                return true; // return true if the version exists
+
+            } else {
+
+                System.out.println("Version " + version + " for client " + client.toString() + " does not exist.");
+                return false; // return false if the version does not exist
+
+            }
+        } catch (Exception e) {
+
+            System.err.println("Error checking version: " + e.getMessage()); // output error message
+            return false;
+
+        }
+    }
+
+    // returns the name of the jar file
+    private static String getServerJar(Client client, String version, String serverFolderName) {
+
+        // url: https://mcutils.com/api/server-jars/{client}/{version}/download
+        String url = "https://mcutils.com/api/server-jars/" + client.toString() + "/" + version + "/download";
+        String jarName = client.toString() + "-" + version + ".jar"; // the name of the jar file to be downloaded
+
+        try {
+
+            Files.createDirectories(Paths.get(serverFolderName)); // make sure the directory exists
+            InputStream in = URI.create(url).toURL().openStream(); // open the input stream from the URL
+            Files.copy(in, Paths.get(serverFolderName, jarName), StandardCopyOption.REPLACE_EXISTING); // copy the input stream to the file; replace if it exists already
+            return jarName; // return the path to the jar file
+
+        } catch (Exception e) {
+
+            System.err.println("Error downloading server jar: " + e.getMessage()); // output error message
+            return null;
+
+        }
+    }
+
+    private static void createBat(String jarName, Client client, String serverFolderName, int ramAlloc) {
+
+        // alloc greater than 12gb has different flags
+        // credit: https://flags.sh/
+        boolean isLargeAlloc = ramAlloc >= 12 * BINARY_FACTOR;
+        System.out.println(ramAlloc + "MB allocated to the server");
+
+        // create a run.bat file to start the server
+        String runBatContent = "java -Xms" + ramAlloc + "M -Xmx" + ramAlloc + "M --add-modules=jdk.incubator.vector -XX:+UseG1GC " +
+                "-XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions " +
+                "-XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 " +
+                "-XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 " +
+                "-XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem " +
+                "-XX:MaxTenuringThreshold=1 -Dusing.aikars.flags=https://mcflags.emc.gs -Daikars.new.flags=true " +
+                "-XX:G1NewSizePercent=" + (isLargeAlloc ? 40 : 30) + " -XX:G1MaxNewSizePercent=" + (isLargeAlloc ? 50 : 40) + " -XX:G1HeapRegionSize=" + (isLargeAlloc ? 16 : 8)
+                + "M -XX:G1ReservePercent=" + (isLargeAlloc ? 15 : 20) + " -jar " + jarName + (client.toString().equalsIgnoreCase("forge") ? " --installServer" : "");
+
+        try {
+
+            Files.write(Paths.get(serverFolderName, "run.bat"), runBatContent.getBytes()); // write the content to run.bat
+
+        } catch (Exception e) {
+
+            System.err.println("Error creating run.bat: " + e.getMessage()); // output error message
+
+        }
+    }
+
+    private static void runBat(String serverFolderName) {
+
+        // run the run.bat file
+        try {
+
+            ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "start", "run.bat");
+            pb.directory(Paths.get(serverFolderName).toFile()); // set the working directory to the server folder so the JAR file can be found
+            Process process = pb.start(); // start the process
+
+            int exitCode = process.waitFor(); // wait for the process to finish
+            System.out.println("Exit code: " + exitCode); // output the exit code
+
+        } catch (IOException e) {
+
+            System.err.println("Error running run.bat: " + e.getMessage()); // output error message
+
+        } catch (InterruptedException e) {
+
+            Thread.currentThread().interrupt(); // restore the interrupted status
+            System.err.println("Process was interrupted: " + e.getMessage()); // output error message
 
         }
     }
@@ -390,7 +433,7 @@ public class Main {
                 lines.add("motd=" + motd); // add the motd line if it does not exist
 
             Files.write(path, lines); // write the modified lines back to the file
-            System.out.println("MOTD set to: " + motd);
+            System.out.println("^^ MOTD set! ^^");
 
         } catch (IOException e) {
 
@@ -412,7 +455,7 @@ public class Main {
 
         try {
 
-            URL url = new URL("https://api.ipify.org"); // you can also use "https://checkip.amazonaws.com"
+            URL url = URI.create("https://api.ipify.org").toURL(); // you can also use "https://checkip.amazonaws.com"
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
 
