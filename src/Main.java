@@ -21,28 +21,32 @@ public class Main {
 
     public static void main(String[] args) {
 
-        printCompletedMessage();
-
         Scanner console = new Scanner(System.in);
 
-        String serverName = getServerName(console);
+        String serverFolderName = getServerFolderName(console);
         String client = getClient(console);
         String version = getVersion(console, client);
         int ramAlloc = getRamAlloc(console);
 
         String jarName = client + "-" + version + ".jar";
 
-        String jarPath = getServerJar(jarName, client, version, serverName);
-        createBat(jarName, serverName, ramAlloc);
-        runBat(serverName);
-        waitForEULA(serverName);
-        acceptEula(console, serverName);
+        String jarPath = getServerJar(jarName, client, version, serverFolderName);
+        createBat(jarName, client, serverFolderName, ramAlloc);
+        runBat(serverFolderName);
 
-        System.out.println(client + " " + version);
+        if (!waitForEULA(serverFolderName)) {
+
+            System.out.println("EULA file was not created in time. Please try again later.");
+            System.exit(1); // exit the program if the EULA file was not created
+
+        }
+
+        acceptEula(console, serverFolderName);
+        setMOTD("goated server", serverFolderName);
 
     }
 
-    private static String getServerName(Scanner console) {
+    private static String getServerFolderName(Scanner console) {
 
         System.out.println("-- Step 1: Server name -- ");
         System.out.println("What would you like to name your server? (Name of the folder to be created, does not affect actual server)");
@@ -173,6 +177,9 @@ public class Main {
             // cast float to int and convert gigabytes to megabits
             output = (int) memory * MEGABIT_FACTOR;
 
+            if (output == 0)
+                System.out.println("Invalid input, please try again");
+
         }
 
         return output;
@@ -188,13 +195,12 @@ public class Main {
 
         try {
 
-            URL url1 = URI.create(url).toURL(); // create a URL object from the string
-            HttpURLConnection huc = (HttpURLConnection) url1.openConnection(); // open a connection to the URL
+            URL testURL = URI.create(url).toURL(); // create a URL object from the string
+            HttpURLConnection huc = (HttpURLConnection) testURL.openConnection(); // open a connection to the URL
             huc.setRequestMethod("GET"); // set the request method to GET
             huc.connect(); // connect to the URL
 
             int responseCode = huc.getResponseCode(); // get the response code
-            System.out.println("Response Code: " + responseCode); // output the response code
 
             if (responseCode == 200) { // if the response code is 200, the version exists
 
@@ -216,15 +222,15 @@ public class Main {
     }
 
     // returns the path to the server jar file
-    private static String getServerJar(String jarName, String client, String version, String serverName) {
+    private static String getServerJar(String jarName, String client, String version, String serverFolderName) {
 
         // url: https://mcutils.com/api/server-jars/{client}/{version}/download
         String url = "https://mcutils.com/api/server-jars/" + client + "/" + version + "/download";
-        String jarPath = serverName + "/" + jarName;
+        String jarPath = serverFolderName + "/" + jarName;
 
         try {
 
-            Files.createDirectories(Paths.get(serverName)); // make sure the directory exists
+            Files.createDirectories(Paths.get(serverFolderName)); // make sure the directory exists
             InputStream in = URI.create(url).toURL().openStream(); // open the input stream from the URL
             Files.copy(in, Paths.get(jarPath), java.nio.file.StandardCopyOption.REPLACE_EXISTING); // copy the input stream to the file; replace if it exists already
             return jarPath; // return the path to the jar file
@@ -237,7 +243,7 @@ public class Main {
         }
     }
 
-    private static void createBat(String jarName, String serverName, int ramAlloc) {
+    private static void createBat(String jarName, String client, String serverFolderName, int ramAlloc) {
 
         // alloc greater than 12gb has different flags
         // credit: https://flags.sh/
@@ -252,11 +258,11 @@ public class Main {
                 "-XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem " +
                 "-XX:MaxTenuringThreshold=1 -Dusing.aikars.flags=https://mcflags.emc.gs -Daikars.new.flags=true " +
                 "-XX:G1NewSizePercent=" + (isLargeAlloc ? 40 : 30) + " -XX:G1MaxNewSizePercent=" + (isLargeAlloc ? 50 : 40) + " -XX:G1HeapRegionSize=" + (isLargeAlloc ? 16 : 8)
-                + "M -XX:G1ReservePercent=" + (isLargeAlloc ? 15 : 20) + " -jar " + jarName;
+                + "M -XX:G1ReservePercent=" + (isLargeAlloc ? 15 : 20) + " -jar " + jarName + (client.equalsIgnoreCase("forge") ? " --installServer" : "");
 
         try {
 
-            Files.write(Paths.get(serverName, "run.bat"), runBatContent.getBytes()); // write the content to run.bat
+            Files.write(Paths.get(serverFolderName, "run.bat"), runBatContent.getBytes()); // write the content to run.bat
 
         } catch (Exception e) {
 
@@ -265,13 +271,13 @@ public class Main {
         }
     }
 
-    private static void runBat(String serverName) {
+    private static void runBat(String serverFolderName) {
 
         // run the run.bat file
         try {
 
             ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "start", "run.bat");
-            pb.directory(Paths.get(serverName).toFile()); // set the working directory to the server folder so the JAR file can be found
+            pb.directory(Paths.get(serverFolderName).toFile()); // set the working directory to the server folder so the JAR file can be found
             Process process = pb.start(); // start the process
 
             int exitCode = process.waitFor(); // wait for the process to finish
@@ -289,7 +295,7 @@ public class Main {
         }
     }
 
-    private static void waitForEULA(String serverName) {
+    private static boolean waitForEULA(String serverFolderName) {
 
         System.out.println("-- Step 5: EULA --");
         System.out.println("Waiting for the EULA to be created by the server...");
@@ -301,10 +307,10 @@ public class Main {
 
             try {
 
-                if (Files.exists(Paths.get(serverName, "eula.txt"))) {
+                if (Files.exists(Paths.get(serverFolderName, "eula.txt"))) {
 
                     System.out.println("EULA file found. You can now accept the EULA.");
-                    return; // EULA file exists, exit the loop
+                    return true; // EULA file exists, exit the loop and return true
 
                 }
 
@@ -315,13 +321,16 @@ public class Main {
 
                 Thread.currentThread().interrupt(); // restore the interrupted status
                 System.err.println("Waiting for EULA was interrupted: " + e.getMessage());
-                return; // exit if interrupted
+                return false; // return false if interrupted
 
             }
         }
+
+        return false;
+
     }
 
-    private static void acceptEula(Scanner console, String serverName) {
+    private static void acceptEula(Scanner console, String serverFolderName) {
 
         System.out.println("Please type \"yes\" to agree to Minecraft's EULA (this is a required step to run the server");
         System.out.println("View the EULA here: https://aka.ms/MinecraftEULA");
@@ -336,7 +345,7 @@ public class Main {
 
         try {
 
-            Path path = Paths.get(serverName, "eula.txt");
+            Path path = Paths.get(serverFolderName, "eula.txt");
             List<String> lines = Files.readAllLines(path);
 
             // find the line that starts with "eula=" and set it to "eula=true"
@@ -345,11 +354,47 @@ public class Main {
                     lines.set(i, "eula=true");
 
             Files.write(path, lines); // write the modified lines back to the file
-            System.out.println("EULA accepted. You can now run your server.");
+            System.out.println("EULA accepted.");
+
+            printCompletedMessage();
 
         } catch (IOException e) {
 
             System.err.println("Error writing to eula.txt: " + e.getMessage()); // output error message
+
+        }
+    }
+
+    private static void setMOTD(String motd, String serverFolderName) {
+
+        // go to server.properties file and find the line that starts with "motd=", set it to the provided motd if it exists or create it if it does not exist
+        try {
+
+            Path path = Paths.get(serverFolderName, "server.properties");
+            List<String> lines = Files.readAllLines(path);
+
+            boolean motdSet = false;
+
+            for (int i = 0; i < lines.size(); i++) {
+
+                if (lines.get(i).trim().startsWith("motd=")) {
+
+                    lines.set(i, "motd=" + motd);
+                    motdSet = true;
+                    break;
+
+                }
+            }
+
+            if (!motdSet)
+                lines.add("motd=" + motd); // add the motd line if it does not exist
+
+            Files.write(path, lines); // write the modified lines back to the file
+            System.out.println("MOTD set to: " + motd);
+
+        } catch (IOException e) {
+
+            System.err.println("Error writing to server.properties: " + e.getMessage());
 
         }
     }
@@ -362,6 +407,8 @@ public class Main {
         System.out.println("To allow users on other networks to join your server, you will likely need to port forward your router. Be careful when doing this, it is advanced and requires changing router settings.");
         System.out.println("\tCheck out this guide to port forwarding: https://www.wikihow.com/Portforward-Minecraft ");
         System.out.println("In your server folder, check out server.properties to edit things like server render distance, seed, and description\n");
+
+        System.out.println("Be careful when handing out your IP.");
 
         try {
 

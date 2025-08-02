@@ -1,0 +1,63 @@
+[02:27:27] [Server thread/INFO]: Starting minecraft server version 1.8.9
+[02:27:27] [Server thread/INFO]: Loading properties
+[02:27:27] [Server thread/INFO]: Default game type: SURVIVAL
+[02:27:27] [Server thread/INFO]: Generating keypair
+[02:27:27] [Server thread/INFO]: Starting Minecraft server on *:25565
+[02:27:27] [Server thread/INFO]: Using default channel type
+[02:27:27] [Server thread/WARN]: Failed to load user banlist: 
+java.io.FileNotFoundException: banned-players.json (The system cannot find the file specified)
+	at java.base/java.io.FileInputStream.open0(Native Method) ~[?:?]
+	at java.base/java.io.FileInputStream.open(FileInputStream.java:216) ~[?:?]
+	at java.base/java.io.FileInputStream.<init>(FileInputStream.java:157) ~[?:?]
+	at com.google.common.io.Files.newReader(Files.java:86) ~[vanilla-1.8.9.jar:?]
+	at mb.g(SourceFile:124) ~[vanilla-1.8.9.jar:?]
+	at kn.z(SourceFile:99) [vanilla-1.8.9.jar:?]
+	at kn.<init>(SourceFile:25) [vanilla-1.8.9.jar:?]
+	at ko.i(SourceFile:172) [vanilla-1.8.9.jar:?]
+	at net.minecraft.server.MinecraftServer.run(SourceFile:421) [vanilla-1.8.9.jar:?]
+	at java.base/java.lang.Thread.run(Thread.java:842) [?:?]
+[02:27:27] [Server thread/WARN]: Failed to load ip banlist: 
+java.io.FileNotFoundException: banned-ips.json (The system cannot find the file specified)
+	at java.base/java.io.FileInputStream.open0(Native Method) ~[?:?]
+	at java.base/java.io.FileInputStream.open(FileInputStream.java:216) ~[?:?]
+	at java.base/java.io.FileInputStream.<init>(FileInputStream.java:157) ~[?:?]
+	at com.google.common.io.Files.newReader(Files.java:86) ~[vanilla-1.8.9.jar:?]
+	at mb.g(SourceFile:124) ~[vanilla-1.8.9.jar:?]
+	at kn.y(SourceFile:91) [vanilla-1.8.9.jar:?]
+	at kn.<init>(SourceFile:27) [vanilla-1.8.9.jar:?]
+	at ko.i(SourceFile:172) [vanilla-1.8.9.jar:?]
+	at net.minecraft.server.MinecraftServer.run(SourceFile:421) [vanilla-1.8.9.jar:?]
+	at java.base/java.lang.Thread.run(Thread.java:842) [?:?]
+[02:27:27] [Server thread/WARN]: Failed to load operators list: 
+java.io.FileNotFoundException: ops.json (The system cannot find the file specified)
+	at java.base/java.io.FileInputStream.open0(Native Method) ~[?:?]
+	at java.base/java.io.FileInputStream.open(FileInputStream.java:216) ~[?:?]
+	at java.base/java.io.FileInputStream.<init>(FileInputStream.java:157) ~[?:?]
+	at com.google.common.io.Files.newReader(Files.java:86) ~[vanilla-1.8.9.jar:?]
+	at mb.g(SourceFile:124) ~[vanilla-1.8.9.jar:?]
+	at kn.A(SourceFile:107) [vanilla-1.8.9.jar:?]
+	at kn.<init>(SourceFile:29) [vanilla-1.8.9.jar:?]
+	at ko.i(SourceFile:172) [vanilla-1.8.9.jar:?]
+	at net.minecraft.server.MinecraftServer.run(SourceFile:421) [vanilla-1.8.9.jar:?]
+	at java.base/java.lang.Thread.run(Thread.java:842) [?:?]
+[02:27:27] [Server thread/WARN]: Failed to load white-list: 
+java.io.FileNotFoundException: whitelist.json (The system cannot find the file specified)
+	at java.base/java.io.FileInputStream.open0(Native Method) ~[?:?]
+	at java.base/java.io.FileInputStream.open(FileInputStream.java:216) ~[?:?]
+	at java.base/java.io.FileInputStream.<init>(FileInputStream.java:157) ~[?:?]
+	at com.google.common.io.Files.newReader(Files.java:86) ~[vanilla-1.8.9.jar:?]
+	at mb.g(SourceFile:124) ~[vanilla-1.8.9.jar:?]
+	at kn.C(SourceFile:123) [vanilla-1.8.9.jar:?]
+	at kn.<init>(SourceFile:30) [vanilla-1.8.9.jar:?]
+	at ko.i(SourceFile:172) [vanilla-1.8.9.jar:?]
+	at net.minecraft.server.MinecraftServer.run(SourceFile:421) [vanilla-1.8.9.jar:?]
+	at java.base/java.lang.Thread.run(Thread.java:842) [?:?]
+[02:27:27] [Server thread/INFO]: Preparing level "world"
+[02:27:27] [Server thread/INFO]: Preparing start region for level 0
+[02:27:28] [Server thread/INFO]: Preparing spawn area: 20%
+[02:27:29] [Server thread/INFO]: Preparing spawn area: 59%
+[02:27:30] [Server thread/INFO]: Done (2.907s)! For help, type "help" or "?"
+[02:27:53] [Server thread/INFO]: Stopping server
+[02:27:53] [Server thread/INFO]: Saving players
+[02:27:53] [Server thread/INFO]: Saving worlds
+[02:27:53] [Server thread/INFO]: Saving chunks for level 'world'/Overworld
