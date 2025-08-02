@@ -1,10 +1,14 @@
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
@@ -16,6 +20,8 @@ public class Main {
     private static final int MEGABIT_FACTOR = 1024;
 
     public static void main(String[] args) {
+
+        printCompletedMessage();
 
         Scanner console = new Scanner(System.in);
 
@@ -29,6 +35,7 @@ public class Main {
         String jarPath = getServerJar(jarName, client, version, serverName);
         createBat(jarName, serverName, ramAlloc);
         runBat(serverName);
+        waitForEULA(serverName);
         acceptEula(console, serverName);
 
         System.out.println(client + " " + version);
@@ -234,10 +241,11 @@ public class Main {
 
         // alloc greater than 12gb has different flags
         // credit: https://flags.sh/
-        boolean isLargeAlloc = ramAlloc * MEGABIT_FACTOR >= 12;
+        boolean isLargeAlloc = ramAlloc >= 12 * MEGABIT_FACTOR;
+        System.out.println(ramAlloc + "MB allocated to the server");
 
         // create a run.bat file to start the server
-        String runBatContent = "java -Xms" + ramAlloc + "G -Xmx" + ramAlloc + "G --add-modules=jdk.incubator.vector -XX:+UseG1GC " +
+        String runBatContent = "java -Xms" + ramAlloc + "M -Xmx" + ramAlloc + "M --add-modules=jdk.incubator.vector -XX:+UseG1GC " +
                 "-XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions " +
                 "-XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 " +
                 "-XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 " +
@@ -248,7 +256,7 @@ public class Main {
 
         try {
 
-            Files.write(Paths.get(serverName + "/run.bat"), runBatContent.getBytes()); // write the content to run.bat
+            Files.write(Paths.get(serverName, "run.bat"), runBatContent.getBytes()); // write the content to run.bat
 
         } catch (Exception e) {
 
@@ -262,41 +270,116 @@ public class Main {
         // run the run.bat file
         try {
 
-            ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "start", Paths.get("run.bat").toString());
-            pb.directory(Paths.get(serverName).toFile()); // set the working directory to the server folder
-            pb.start(); // start the process
+            ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "start", "run.bat");
+            pb.directory(Paths.get(serverName).toFile()); // set the working directory to the server folder so the JAR file can be found
+            Process process = pb.start(); // start the process
 
+            int exitCode = process.waitFor(); // wait for the process to finish
+            System.out.println("Exit code: " + exitCode); // output the exit code
 
         } catch (IOException e) {
 
             System.err.println("Error running run.bat: " + e.getMessage()); // output error message
 
+        } catch (InterruptedException e) {
+
+            Thread.currentThread().interrupt(); // restore the interrupted status
+            System.err.println("Process was interrupted: " + e.getMessage()); // output error message
+
+        }
+    }
+
+    private static void waitForEULA(String serverName) {
+
+        System.out.println("-- Step 5: EULA --");
+        System.out.println("Waiting for the EULA to be created by the server...");
+
+        int timeoutSeconds = 60;
+        int waited = 0;
+
+        while (waited < timeoutSeconds) {
+
+            try {
+
+                if (Files.exists(Paths.get(serverName, "eula.txt"))) {
+
+                    System.out.println("EULA file found. You can now accept the EULA.");
+                    return; // EULA file exists, exit the loop
+
+                }
+
+                Thread.sleep(1000); // wait for 1 second before checking again
+                waited++;
+
+            } catch (InterruptedException e) {
+
+                Thread.currentThread().interrupt(); // restore the interrupted status
+                System.err.println("Waiting for EULA was interrupted: " + e.getMessage());
+                return; // exit if interrupted
+
+            }
         }
     }
 
     private static void acceptEula(Scanner console, String serverName) {
 
-        System.out.println("-- Step 5: EULA --");
         System.out.println("Please type \"yes\" to agree to Minecraft's EULA (this is a required step to run the server");
         System.out.println("View the EULA here: https://aka.ms/MinecraftEULA");
 
-        System.out.println("Accept EULA: ");
+        System.out.print("Accept EULA: ");
 
         while (!console.nextLine().equalsIgnoreCase("yes"))
             System.out.println("You did not accept the EULA. Please type \"yes\" to accept it");
 
         // at this point, the user has accepted the EULA
         // access the eula.txt file and set eula=true
-        String eulaPath = serverName + "/eula.txt";
 
         try {
 
-            Files.write(Paths.get(eulaPath), "eula=true".getBytes()); // write eula=true to the eula.txt file
+            Path path = Paths.get(serverName, "eula.txt");
+            List<String> lines = Files.readAllLines(path);
+
+            // find the line that starts with "eula=" and set it to "eula=true"
+            for (int i = 0; i < lines.size(); i++)
+                if (lines.get(i).trim().startsWith("eula="))
+                    lines.set(i, "eula=true");
+
+            Files.write(path, lines); // write the modified lines back to the file
             System.out.println("EULA accepted. You can now run your server.");
 
         } catch (IOException e) {
 
             System.err.println("Error writing to eula.txt: " + e.getMessage()); // output error message
+
+        }
+    }
+
+    private static void printCompletedMessage() {
+
+        System.out.println("\nYour server has been created successfully!\n");
+        System.out.println("A GUI will open where you can monitor your server and type commands.");
+        System.out.println("Type \"/op [username]\" to grant a user admin privileges (ability to type commands in game instead of console)");
+        System.out.println("To allow users on other networks to join your server, you will likely need to port forward your router. Be careful when doing this, it is advanced and requires changing router settings.");
+        System.out.println("\tCheck out this guide to port forwarding: https://www.wikihow.com/Portforward-Minecraft ");
+        System.out.println("In your server folder, check out server.properties to edit things like server render distance, seed, and description\n");
+
+        try {
+
+            URL url = new URL("https://api.ipify.org"); // you can also use "https://checkip.amazonaws.com"
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String publicIP = reader.readLine();
+            reader.close();
+
+            System.out.println("Here is your public IP (use this to connect to your server): " + publicIP + ":25565");
+            System.out.println("IP without port: " + publicIP);
+
+        } catch (Exception e) {
+
+            System.err.println("Error fetching public IP: " + e.getMessage());
+            System.out.println("You can find your public IP by searching \"what is my ip\" in your browser.");
 
         }
     }
