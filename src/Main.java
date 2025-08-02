@@ -32,21 +32,21 @@ public class Main {
         System.out.println("Please do not type unless prompted.\n");
         Scanner console = new Scanner(System.in);
 
-        String os = System.getProperty("os.name").toLowerCase();
-        OperatingSystem operatingSystem = null;
+        String osStr = System.getProperty("os.name").toLowerCase();
+        OperatingSystem os;
 
-        if (os.contains("win"))
-            operatingSystem = OperatingSystem.Windows;
-        else if (os.contains("mac"))
-            operatingSystem = OperatingSystem.MacOS;
-        else if (os.contains("nix") || os.contains("nux") || os.contains("aix"))
-            operatingSystem = OperatingSystem.Linux;
+        if (osStr.contains("win"))
+            os = OperatingSystem.Windows;
+        else if (osStr.contains("mac"))
+            os = OperatingSystem.MacOS;
+        else if (osStr.contains("nix") || osStr.contains("nux") || osStr.contains("aix"))
+            os = OperatingSystem.Linux;
         else
-            operatingSystem = OperatingSystem.Other; // if the operating system is not recognized, set it to Other
+            os = OperatingSystem.Other; // if the operating system is not recognized, set it to Other
 
-        if (operatingSystem == OperatingSystem.Other) {
+        if (os == OperatingSystem.Other) {
 
-            System.out.println("Your operating system is not recognized: " + os + ". Some features may not work as expected.");
+            System.out.println("Your operating system is not recognized: " + osStr + ". Some features may not work as expected.");
             System.out.println("You will have to run the run.sh or run.bat file manually.");
             System.out.println("Press enter to continue...");
             console.nextLine();
@@ -59,20 +59,20 @@ public class Main {
         int ramAlloc = getRamAlloc(console);
 
         String jarName = getServerJar(client, version, serverFolderName);
-        createRunFiles(jarName, client, serverFolderName, ramAlloc, operatingSystem);
+        createRunFiles(jarName, client, serverFolderName, ramAlloc, os);
 
         // run the server based on the operating system
-        if (operatingSystem == OperatingSystem.Windows) {
+        if (os == OperatingSystem.Windows) {
 
             runBat(serverFolderName);
 
-        } else if (operatingSystem == OperatingSystem.Linux || operatingSystem == OperatingSystem.MacOS) {
+        } else if (os == OperatingSystem.Linux || os == OperatingSystem.MacOS) {
 
             runSh(serverFolderName);
 
         } else {
 
-            System.out.println("Operating system not recognized: " + os + ". You will have to run the run.sh or run.bat file manually.");
+            System.out.println("You will have to run the run.sh or run.bat file manually.");
             System.out.println("Press enter when you have done so. If you continue without running the server, the program will not work as expected.");
             console.nextLine();
 
@@ -97,13 +97,7 @@ public class Main {
 
         printCompletedMessage();
 
-        // run the server based on the operating system
-        if (os.contains("win"))
-            runBat(serverFolderName);
-        else if (os.contains("nix") || os.contains("nux") || os.contains("aix") || os.contains("mac"))
-            runSh(serverFolderName);
-        else
-            System.out.println("Operating system not recognized: " + os + ". You will have to run the run.sh or run.bat file manually.");
+        turnOnServerPrompt(console, serverFolderName, os);
 
     }
 
@@ -268,7 +262,7 @@ public class Main {
     //region Step 5: EULA
     private static boolean waitForEULA(String serverFolderName) {
 
-        System.out.println("-- Step 5: EULA --");
+        System.out.println("\n-- Step 5: EULA --");
         System.out.println("Waiting for the EULA to be created by the server...");
 
         int timeoutSeconds = 60;
@@ -306,7 +300,7 @@ public class Main {
         System.out.println("Please type \"yes\" to agree to Minecraft's EULA (this is a required step to run the server");
         System.out.println("View the EULA here: https://aka.ms/MinecraftEULA");
 
-        System.out.print("Accept EULA: ");
+        System.out.print("\nAccept EULA: ");
 
         while (!console.nextLine().equalsIgnoreCase("yes"))
             System.out.println("You did not accept the EULA. Please type \"yes\" to accept it");
@@ -325,7 +319,7 @@ public class Main {
                     lines.set(i, "eula=true");
 
             Files.write(path, lines); // write the modified lines back to the file
-            System.out.println("EULA accepted.");
+            System.out.println("\nEULA accepted.\n");
 
         } catch (IOException e) {
 
@@ -364,6 +358,29 @@ public class Main {
 
     }
     // endregion
+
+    //region Turn on server prompt
+
+    private static void turnOnServerPrompt(Scanner console, String serverFolderName, OperatingSystem os) {
+
+        System.out.print("\nWould you like to turn your server on now? (y/n)");
+
+        String input = console.nextLine();
+
+        if (input.equalsIgnoreCase("y") || input.equalsIgnoreCase("yes")) {
+
+            // run the server based on the operating system
+            if (os == OperatingSystem.Windows)
+                runBat(serverFolderName);
+            else if (os == OperatingSystem.Linux || os == OperatingSystem.MacOS)
+                runSh(serverFolderName);
+            else
+                System.out.println("Operating system not recognized: " + os + ". You will have to run the run.sh or run.bat file manually.");
+
+        }
+    }
+
+    //endregion
 
     private static boolean testVersion(Client client, String version) {
 
@@ -485,7 +502,7 @@ public class Main {
 
             } else {
 
-                // set the file as executable for Linux and MacOS
+                // set the file as executable for Linux and macOS
                 Set<PosixFilePermission> perms = Set.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_READ);
                 Files.setPosixFilePermissions(path, perms);
                 System.out.println("run.sh created and set as executable");
@@ -520,9 +537,6 @@ public class Main {
             System.err.println("Process was interrupted: " + e.getMessage()); // output error message
 
         }
-
-        return null;
-
     }
 
     private static void runSh(String serverFolderName) {
@@ -547,12 +561,7 @@ public class Main {
             System.err.println("Process was interrupted: " + e.getMessage()); // output error message
 
         }
-
-        return null;
-
     }
-
-    //unSh what
 
     private static void setMOTD(String motd, String serverFolderName) {
 
@@ -608,7 +617,7 @@ public class Main {
 
     private static void printCompletedMessageForge() {
 
-        System.out.println("\n** Your server installer has been downloaded succesfully **\n");
+        System.out.println("\n** Your server installer has been downloaded successfully **\n");
         System.out.println("You must run the installer \".jar\" file to complete setup. (Sorry, Forge is annoying)");
         System.out.println("Make sure to select \"Server\" in the installer.\n");
 
@@ -639,7 +648,7 @@ public class Main {
             String publicIP = reader.readLine();
             reader.close();
 
-            System.out.println("Here is your public IP (users outisde your network use this to join): " + publicIP);
+            System.out.println("Here is your public IP (users outside your network use this to join): " + publicIP);
 
         } catch (Exception e) {
 
