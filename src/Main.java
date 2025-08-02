@@ -22,6 +22,8 @@ public class Main {
 
     public static void main(String[] args) {
 
+        System.out.println("\n** Welcome to the Minecraft Server Wizard **");
+        System.out.println("\t Please do not type unless prompted.\n");
         Scanner console = new Scanner(System.in);
 
         String serverFolderName = getServerFolderName(console);
@@ -32,6 +34,13 @@ public class Main {
         String jarName = getServerJar(client, version, serverFolderName);
         createBat(jarName, client, serverFolderName, ramAlloc);
         runBat(serverFolderName);
+
+        if (client == Client.forge) {
+
+            printCompletedMessageForge();
+            return;
+
+        }
 
         if (!waitForEULA(serverFolderName)) {
 
@@ -46,8 +55,6 @@ public class Main {
         printCompletedMessage();
 
     }
-
-    //
 
     // region Step 1: Server Name
     private static String getServerFolderName(Scanner console) {
@@ -65,7 +72,7 @@ public class Main {
             if (isFileNameValid(input))
                 output = input;
             else
-                System.out.println("Your server name (folder name) contains one or more invalid characters, or the name is not allowed by Windows. Please try again");
+                System.out.println("Your folder name contains one or more invalid chars, or the name is not allowed by Windows. Please try again");
 
         }
 
@@ -98,8 +105,8 @@ public class Main {
         System.out.println("-- Step 2: Client version --");
         System.out.println("Please type the server client you would like to use");
         System.out.println("\t[1] Paper: Recommended default, has support for plugins");
-        System.out.println("\t[2] Forge: Allows Forge modes (no native plugin support)");
-        System.out.println("\t[3] Fabric: Allows Fabric modes (no native plugin support)");
+        System.out.println("\t[2] Fabric: Allows Fabric mods (no native plugin support)");
+        System.out.println("\t[3] Forge: Allows Forge mods. REQUIRES MANUAL SETUP! (no native plugin support)");
         System.out.println("\t[4] Vanilla: Plain Minecraft (no native plugin support). \n\t\t(It is advised to use Paper instead of vanilla for performance.)");
 
         Client client = null; // initialize client to null
@@ -112,8 +119,8 @@ public class Main {
             client = switch (input) {
 
                 case "1" -> Client.paper;
-                case "2" -> Client.forge;
-                case "3" -> Client.fabric;
+                case "2" -> Client.fabric;
+                case "3" -> Client.forge;
                 case "4" -> Client.vanilla;
                 default -> null;
 
@@ -144,9 +151,14 @@ public class Main {
 
             System.out.print("\nVersion: ");
             String input = console.nextLine();
+            String version = input;
 
-            if (testVersion(client, input))
-                output = input;
+            // ignore everything after the first space
+            if(input.contains(" "))
+                version = input.substring(0, input.indexOf(" "));
+
+            if (testVersion(client, version))
+                output = version;
             else
                 System.out.println("Invalid input, please try again");
 
@@ -305,6 +317,7 @@ public class Main {
 
         // url: https://mcutils.com/api/server-jars/{client}/{version}/exists
         String url = "https://mcutils.com/api/server-jars/" + client.toString() + "/" + version + "/download";
+        System.out.println(url);
 
         try {
 
@@ -317,12 +330,12 @@ public class Main {
 
             if (responseCode == 200) { // if the response code is 200, the version exists
 
-                System.out.println("Version " + version + " for client " + client.toString() + " exists.");
+                System.out.println("Version " + version + " for client " + client + " exists.");
                 return true; // return true if the version exists
 
             } else {
 
-                System.out.println("Version " + version + " for client " + client.toString() + " does not exist.");
+                System.out.println("Version " + version + " for client " + client + " does not exist.");
                 return false; // return false if the version does not exist
 
             }
@@ -339,7 +352,7 @@ public class Main {
 
         // url: https://mcutils.com/api/server-jars/{client}/{version}/download
         String url = "https://mcutils.com/api/server-jars/" + client.toString() + "/" + version + "/download";
-        String jarName = client.toString() + "-" + version + ".jar"; // the name of the jar file to be downloaded
+        String jarName = client + "-" + version + ".jar"; // the name of the jar file to be downloaded
 
         try {
 
@@ -444,14 +457,14 @@ public class Main {
 
     private static void printCompletedMessage() {
 
-        System.out.println("\nYour server has been created successfully!\n");
+        System.out.println("\n** Your server has been created successfully! **\n");
         System.out.println("A GUI will open where you can monitor your server and type commands.");
-        System.out.println("Type \"/op [username]\" to grant a user admin privileges (ability to type commands in game instead of console)");
-        System.out.println("To allow users on other networks to join your server, you will likely need to port forward your router. Be careful when doing this, it is advanced and requires changing router settings.");
+        System.out.println("Type \"/op [username]\" to grant a user admin privileges (ability to type commands in game)");
+        System.out.println("To allow users on other networks to join your server, you will likely need to port forward your router.");
         System.out.println("\tCheck out this guide to port forwarding: https://www.wikihow.com/Portforward-Minecraft ");
-        System.out.println("In your server folder, check out server.properties to edit things like server render distance, seed, and description\n");
-
-        System.out.println("Be careful when handing out your IP.");
+        System.out.println("\tBe careful when doing this, it is advanced and requires changing router settings.");
+        System.out.println("\nCheck out this guide to learn how to configure your server settings (render distance, seed, MOTD, etc.):");
+        System.out.println("\thttps://minecraft.wiki/w/Server.properties\n");
 
         try {
 
@@ -472,5 +485,49 @@ public class Main {
             System.out.println("You can find your public IP by searching \"what is my ip\" in your browser.");
 
         }
+
+        System.out.println("Be careful when handing out your IP.\n");
+
+        System.out.println("Use \"run.bat\" to turn your server on.");
+
+    }
+
+    private static void printCompletedMessageForge(){
+
+        System.out.println("\n** Your server installer has been downloaded succesfully **\n");
+        System.out.println("You must run the installer \".jar\" file to complete setup. (Sorry, Forge is annoying)");
+        System.out.println("Make sure to select \"Server\" in the installer.\n");
+
+        System.out.println("Once setup is complete, use \"run.bat\" to turn your server on.");
+        System.out.println("When your server starts, a GUI will open where you can monitor your server and type commands.");
+        System.out.println("Type \"/op [username]\" to grant a user admin privileges (ability to type commands in game)");
+        System.out.println("To allow users on other networks to join your server, you will likely need to port forward your router.");
+        System.out.println("\tCheck out this guide to port forwarding: https://www.wikihow.com/Portforward-Minecraft ");
+        System.out.println("\tBe careful when doing this, it is advanced and requires changing router settings.");
+        System.out.println("\nCheck out this guide to learn how to configure your server settings (render distance, seed, MOTD, etc.):");
+        System.out.println("\thttps://minecraft.wiki/w/Server.properties\n");
+
+        try {
+
+            URL url = URI.create("https://api.ipify.org").toURL(); // you can also use "https://checkip.amazonaws.com"
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String publicIP = reader.readLine();
+            reader.close();
+
+            System.out.println("Here is your public IP (use this to connect to your server): " + publicIP + ":25565");
+            System.out.println("IP without port: " + publicIP);
+
+        } catch (Exception e) {
+
+            System.err.println("Error fetching public IP: " + e.getMessage());
+            System.out.println("You can find your public IP by searching \"what is my ip\" in your browser.");
+
+        }
+
+        System.out.println("Be careful when handing out your IP.\n");
+
     }
 }
