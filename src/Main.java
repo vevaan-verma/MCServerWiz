@@ -2,15 +2,15 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Main {
 
@@ -32,14 +32,51 @@ public class Main {
         System.out.println("Please do not type unless prompted.\n");
         Scanner console = new Scanner(System.in);
 
+        String os = System.getProperty("os.name").toLowerCase();
+        OperatingSystem operatingSystem = null;
+
+        if (os.contains("win"))
+            operatingSystem = OperatingSystem.Windows;
+        else if (os.contains("mac"))
+            operatingSystem = OperatingSystem.MacOS;
+        else if (os.contains("nix") || os.contains("nux") || os.contains("aix"))
+            operatingSystem = OperatingSystem.Linux;
+        else
+            operatingSystem = OperatingSystem.Other; // if the operating system is not recognized, set it to Other
+
+        if (operatingSystem == OperatingSystem.Other) {
+
+            System.out.println("Your operating system is not recognized: " + os + ". Some features may not work as expected.");
+            System.out.println("You will have to run the run.sh or run.bat file manually.");
+            System.out.println("Press enter to continue...");
+            console.nextLine();
+
+        }
+
         String serverFolderName = getServerFolderName(console);
         Client client = getClient(console);
         String version = getVersion(console, client);
         int ramAlloc = getRamAlloc(console);
 
         String jarName = getServerJar(client, version, serverFolderName);
-        createBat(jarName, client, serverFolderName, ramAlloc);
-        runBat(serverFolderName);
+        createRunFiles(jarName, client, serverFolderName, ramAlloc, operatingSystem);
+
+        // run the server based on the operating system
+        if (operatingSystem == OperatingSystem.Windows) {
+
+            runBat(serverFolderName);
+
+        } else if (operatingSystem == OperatingSystem.Linux || operatingSystem == OperatingSystem.MacOS) {
+
+            runSh(serverFolderName);
+
+        } else {
+
+            System.out.println("Operating system not recognized: " + os + ". You will have to run the run.sh or run.bat file manually.");
+            System.out.println("Press enter when you have done so. If you continue without running the server, the program will not work as expected.");
+            console.nextLine();
+
+        }
 
         if (client == Client.forge) {
 
@@ -60,7 +97,13 @@ public class Main {
 
         printCompletedMessage();
 
-        runBat(serverFolderName);
+        // run the server based on the operating system
+        if (os.contains("win"))
+            runBat(serverFolderName);
+        else if (os.contains("nix") || os.contains("nux") || os.contains("aix") || os.contains("mac"))
+            runSh(serverFolderName);
+        else
+            System.out.println("Operating system not recognized: " + os + ". You will have to run the run.sh or run.bat file manually.");
 
     }
 
@@ -298,7 +341,8 @@ public class Main {
         System.out.println("-- Step 6: Server description (MOTD) --");
         System.out.println("You may set a MOTD description that players will see in their server browser");
         System.out.println("Visit this link to learn how to custom format your MOTD: https://minecraft.fandom.com/wiki/Formatting_codes#Use_in_server.properties_and_pack.mcmeta");
-        System.out.println("Press enter to skip a line. Type \"DONE\" to exit.");
+        System.out.println("Press enter to skip a line. ");
+        System.out.println("Type \"DONE\" on a new line when you're done typing.");
 
         System.out.println("\nType your MOTD below:");
 
@@ -325,7 +369,6 @@ public class Main {
 
         // url: https://mcutils.com/api/server-jars/{client}/{version}/exists
         String url = "https://mcutils.com/api/server-jars/" + client.toString() + "/" + version + "/download";
-        System.out.println(url);
 
         try {
 
@@ -377,15 +420,15 @@ public class Main {
         }
     }
 
-    private static void createBat(String jarName, Client client, String serverFolderName, int ramAlloc) {
+    private static void createRunFiles(String jarName, Client client, String serverFolderName, int ramAlloc, OperatingSystem os) {
 
         // alloc greater than 12gb has different flags
         // credit: https://flags.sh/
         boolean isLargeAlloc = ramAlloc >= 12 * BINARY_FACTOR;
         System.out.println(ramAlloc + "MB allocated to the server");
 
-        // create a run.bat file to start the server
-        String runBatContent = "java -Xms" + ramAlloc + "M -Xmx" + ramAlloc + "M --add-modules=jdk.incubator.vector -XX:+UseG1GC " +
+        // base command for running the server
+        String baseCommand = "java -Xms" + ramAlloc + "M -Xmx" + ramAlloc + "M --add-modules=jdk.incubator.vector -XX:+UseG1GC " +
                 "-XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions " +
                 "-XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 " +
                 "-XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 " +
@@ -394,6 +437,20 @@ public class Main {
                 "-XX:G1NewSizePercent=" + (isLargeAlloc ? 40 : 30) + " -XX:G1MaxNewSizePercent=" + (isLargeAlloc ? 50 : 40) + " -XX:G1HeapRegionSize=" + (isLargeAlloc ? 16 : 8)
                 + "M -XX:G1ReservePercent=" + (isLargeAlloc ? 15 : 20) + " -jar " + jarName + (client.toString().equalsIgnoreCase("forge") ? " --installServer" : "");
 
+        // windows batch file content with eula check (closes the window once the EULA is generated)
+        String runBatContent = "@echo off\n" +
+                "echo Starting server...\n" +
+                "echo This window will automatically close once the EULA is generated.\n" +
+                baseCommand + "\n" +
+                ":loop\n" +
+                "timeout /t 1 >nul\n" +
+                "if exist eula.txt (\n" +
+                "    exit\n" +
+                ") else (\n" +
+                "    goto loop\n" +
+                ")";
+
+        // create a run.bat file to start the server
         try {
 
             Files.write(Paths.get(serverFolderName, "run.bat"), runBatContent.getBytes()); // write the content to run.bat
@@ -401,6 +458,42 @@ public class Main {
         } catch (Exception e) {
 
             System.err.println("Error creating run.bat: " + e.getMessage()); // output error message
+
+        }
+
+        // linux shell script content with eula check (closes the window once the EULA is generated)
+        String runShContent = "#!/usr/bin/env sh\n" +
+                "echo \"Starting server...\"\n" +
+                "echo \"This window will automatically close once the EULA is generated.\"\n" +
+                baseCommand + "\n" +
+                "while true; do\n" +
+                "    sleep 1\n" +
+                "    if [ -f \"eula.txt\" ]; then\n" +
+                "        exit 0\n" +
+                "    fi\n" +
+                "done";
+
+        try {
+
+            Path path = Paths.get(serverFolderName, "run.sh");
+            Files.write(path, runShContent.getBytes()); // write the content to run.sh
+
+            if (os == OperatingSystem.Windows) {
+
+                // if the operating system is Windows, we don't need to set the file as executable
+                System.out.println("run.sh created, but not set as executable since this is Windows");
+
+            } else {
+
+                // set the file as executable for Linux and MacOS
+                Set<PosixFilePermission> perms = Set.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_READ);
+                Files.setPosixFilePermissions(path, perms);
+                System.out.println("run.sh created and set as executable");
+
+            }
+        } catch (Exception e) {
+
+            System.err.println("Error creating run.sh: " + e.getMessage()); // output error message
 
         }
     }
@@ -427,7 +520,39 @@ public class Main {
             System.err.println("Process was interrupted: " + e.getMessage()); // output error message
 
         }
+
+        return null;
+
     }
+
+    private static void runSh(String serverFolderName) {
+
+        // run the run.sh file
+        try {
+
+            ProcessBuilder pb = new ProcessBuilder("sh", "run.sh");
+            pb.directory(Paths.get(serverFolderName).toFile()); // set the working directory to the server folder so the JAR file can be found
+            Process process = pb.start(); // start the process
+
+            int exitCode = process.waitFor(); // wait for the process to finish
+            System.out.println("Exit code: " + exitCode); // output the exit code
+
+        } catch (IOException e) {
+
+            System.err.println("Error running run.sh: " + e.getMessage()); // output error message
+
+        } catch (InterruptedException e) {
+
+            Thread.currentThread().interrupt(); // restore the interrupted status
+            System.err.println("Process was interrupted: " + e.getMessage()); // output error message
+
+        }
+
+        return null;
+
+    }
+
+    //unSh what
 
     private static void setMOTD(String motd, String serverFolderName) {
 
@@ -468,36 +593,16 @@ public class Main {
         System.out.println("\n** Your server has been created successfully! **\n");
         System.out.println("A GUI will open where you can monitor your server and type commands.");
         System.out.println("Type \"/op [username]\" to grant a user admin privileges (ability to type commands in game)");
-        System.out.println("To allow users on other networks to join your server, you will likely need to port forward your router.");
+        System.out.println("To allow users on other networks to join your server, you will need to port forward your router.");
         System.out.println("\tCheck out this guide to port forwarding: https://www.wikihow.com/Portforward-Minecraft ");
         System.out.println("\tBe careful when doing this, it is advanced and requires changing router settings.");
         System.out.println("\nCheck out this guide to learn how to configure your server settings (render distance, seed, MOTD, etc.):");
         System.out.println("\thttps://minecraft.wiki/w/Server.properties\n");
 
-        try {
-
-            URL url = URI.create("https://api.ipify.org").toURL(); // you can also use "https://checkip.amazonaws.com"
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            String publicIP = reader.readLine();
-            reader.close();
-
-            System.out.println("Here is your public IP (use this to connect to your server): " + publicIP + ":25565");
-            System.out.println("IP without port: " + publicIP);
-
-        } catch (Exception e) {
-
-            System.err.println("Error fetching public IP: " + e.getMessage());
-            System.out.println("You can find your public IP by searching \"what is my ip\" in your browser.");
-
-        }
-
-        System.out.println("Be careful when handing out your IP.\n");
-
         System.out.println("Typing \"stop\" stops your server safely.");
-        System.out.println("Open the \"run.bat\" file to turn your server on later.");
+        System.out.println("Open the \"run.bat\" file to turn your server on later (use \"run.sh\" if on Linux or Mac).");
+
+        printPublicIP();
 
     }
 
@@ -507,16 +612,23 @@ public class Main {
         System.out.println("You must run the installer \".jar\" file to complete setup. (Sorry, Forge is annoying)");
         System.out.println("Make sure to select \"Server\" in the installer.\n");
 
-        System.out.println("Once setup is complete, use \"run.bat\" to turn your server on.");
+        System.out.println("Once setup is complete, open \"run.bat\" to turn your server on (use \"run.sh\" if on Linux or Mac).");
         System.out.println("When your server starts, a GUI will open where you can monitor your server and type commands.");
         System.out.println("\tType \"/op [username]\" to grant a user admin privileges (ability to type commands in game)");
         System.out.println("\tTyping \"/stop\" stops the server safely");
-        System.out.println("To allow users on other networks to join your server, you will likely need to port forward your router.");
+        System.out.println("To allow users on other networks to join your server, you will need to port forward your router.");
         System.out.println("\tCheck out this guide to port forwarding: https://www.wikihow.com/Portforward-Minecraft ");
         System.out.println("\tBe careful when doing this, it is advanced and requires changing router settings.");
         System.out.println("\nCheck out this guide to learn how to configure your server settings (render distance, seed, MOTD, etc.):");
-        System.out.println("\thttps://minecraft.wiki/w/Server.properties\n");
+        System.out.println("\thttps://minecraft.wiki/w/Server.properties");
 
+        printPublicIP();
+
+    }
+
+    private static void printPublicIP() {
+
+        System.out.println();
         try {
 
             URL url = URI.create("https://api.ipify.org").toURL(); // you can also use "https://checkip.amazonaws.com"
@@ -527,8 +639,7 @@ public class Main {
             String publicIP = reader.readLine();
             reader.close();
 
-            System.out.println("Here is your public IP (use this to connect to your server): " + publicIP + ":25565");
-            System.out.println("IP without port: " + publicIP);
+            System.out.println("Here is your public IP (users outisde your network use this to join): " + publicIP);
 
         } catch (Exception e) {
 
@@ -537,7 +648,22 @@ public class Main {
 
         }
 
-        System.out.println("Be careful when handing out your IP.\n");
+        // get local IP address
+        try {
+
+            InetAddress localHost = InetAddress.getLocalHost();
+            String localIP = localHost.getHostAddress();
+            System.out.println("Here is your local IP (you + users within your network use this to join): " + localIP);
+
+        } catch (UnknownHostException e) {
+
+            System.err.println("Error fetching local IP: " + e.getMessage());
+            System.out.println("Learn how to find your local IP here: https://www.computerhope.com/issues/ch000483.htm");
+
+        }
+
+        System.out.println("Be careful when handing out your IP.");
+        System.out.println("\nYou MUST port forward your router to allow users from other networks to join your server.\n");
 
     }
 }
