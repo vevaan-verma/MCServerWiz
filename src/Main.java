@@ -22,8 +22,14 @@ public class Main {
 
     public static void main(String[] args) {
 
-        System.out.println("\n** Welcome to the Minecraft Server Wizard **");
-        System.out.println("\t Please do not type unless prompted.\n");
+        // MCServerWiz
+        System.out.println("\n********************************************");
+        System.out.println("Ⅰ         Welcome to MCServerWiz!         Ⅰ");
+        System.out.println("********************************************");
+        System.out.println("\nAll files are from https://mcutils.com/");
+        System.out.println("Your PUBLIC IP is accessed at https://api.ipify.org");
+        System.out.println("\tWe are not affiliated with these sites.\n");
+        System.out.println("Please do not type unless prompted.\n");
         Scanner console = new Scanner(System.in);
 
         String serverFolderName = getServerFolderName(console);
@@ -53,6 +59,8 @@ public class Main {
         setMOTD(getMOTD(console), serverFolderName);
 
         printCompletedMessage();
+
+        runBat(serverFolderName);
 
     }
 
@@ -97,7 +105,7 @@ public class Main {
         return true;
 
     }
-    //endregion
+    // endregion
 
     // region Step 2: Client
     private static Client getClient(Scanner console) {
@@ -135,7 +143,7 @@ public class Main {
         return client;
 
     }
-    //endregion
+    // endregion
 
     // region Step 3: Version
     private static String getVersion(Scanner console, Client client) {
@@ -154,7 +162,7 @@ public class Main {
             String version = input;
 
             // ignore everything after the first space
-            if(input.contains(" "))
+            if (input.contains(" "))
                 version = input.substring(0, input.indexOf(" "));
 
             if (testVersion(client, version))
@@ -168,7 +176,7 @@ public class Main {
         return output;
 
     }
-    //endregion
+    // endregion
 
     // region Step 4: Ram Allocation
     private static int getRamAlloc(Scanner console) {
@@ -212,7 +220,7 @@ public class Main {
         return output;
 
     }
-    //endregion
+    // endregion
 
     //region Step 5: EULA
     private static boolean waitForEULA(String serverFolderName) {
@@ -282,7 +290,7 @@ public class Main {
 
         }
     }
-    //endregion
+    // endregion
 
     // region Step 6: MOTD
     private static String getMOTD(Scanner console) {
@@ -311,7 +319,7 @@ public class Main {
         return output.toString();
 
     }
-    //endregion
+    // endregion
 
     private static boolean testVersion(Client client, String version) {
 
@@ -488,11 +496,12 @@ public class Main {
 
         System.out.println("Be careful when handing out your IP.\n");
 
-        System.out.println("Use \"run.bat\" to turn your server on.");
+        System.out.println("Typing \"stop\" stops your server safely.");
+        System.out.println("Open the \"run.bat\" file to turn your server on later.");
 
     }
 
-    private static void printCompletedMessageForge(){
+    private static void printCompletedMessageForge() {
 
         System.out.println("\n** Your server installer has been downloaded succesfully **\n");
         System.out.println("You must run the installer \".jar\" file to complete setup. (Sorry, Forge is annoying)");
@@ -500,7 +509,8 @@ public class Main {
 
         System.out.println("Once setup is complete, use \"run.bat\" to turn your server on.");
         System.out.println("When your server starts, a GUI will open where you can monitor your server and type commands.");
-        System.out.println("Type \"/op [username]\" to grant a user admin privileges (ability to type commands in game)");
+        System.out.println("\tType \"/op [username]\" to grant a user admin privileges (ability to type commands in game)");
+        System.out.println("\tTyping \"/stop\" stops the server safely");
         System.out.println("To allow users on other networks to join your server, you will likely need to port forward your router.");
         System.out.println("\tCheck out this guide to port forwarding: https://www.wikihow.com/Portforward-Minecraft ");
         System.out.println("\tBe careful when doing this, it is advanced and requires changing router settings.");
