@@ -26,10 +26,13 @@ public class Main {
         System.out.println("\n********************************************");
         System.out.println("Ⅰ         Welcome to MCServerWiz!         Ⅰ");
         System.out.println("********************************************");
+
         System.out.println("\nAll files are from https://mcutils.com/");
         System.out.println("Your PUBLIC IP is accessed at https://api.ipify.org");
         System.out.println("\tWe are not affiliated with these sites.\n");
+
         System.out.println("Please do not type unless prompted.\n");
+
         Scanner console = new Scanner(System.in);
 
         String osStr = System.getProperty("os.name").toLowerCase();
@@ -152,7 +155,7 @@ public class Main {
         System.out.println("\t[1] Paper: Recommended default, has support for plugins");
         System.out.println("\t[2] Fabric: Allows Fabric mods (no native plugin support)");
         System.out.println("\t[3] Forge: Allows Forge mods. REQUIRES MANUAL SETUP! (no native plugin support)");
-        System.out.println("\t[4] Vanilla: Plain Minecraft (no native plugin support). \n\t\t(It is advised to use Paper instead of vanilla for performance.)");
+        System.out.println("\t[4] Vanilla: Plain Minecraft (no native plugin support). \n\t\t(It is advised to use Paper instead of Vanilla for performance.)");
 
         Client client = null; // initialize client to null
 
@@ -232,7 +235,6 @@ public class Main {
             System.out.print("\nMemory allocation (in gigabytes): ");
             String input = console.nextLine();
 
-
             try {
 
                 memory = Float.parseFloat(input); // parse the input to a float
@@ -249,7 +251,12 @@ public class Main {
 
             if (output == 0)
                 System.out.println("Invalid input, please try again");
+            else if (output < 0.5 * BINARY_FACTOR) { // if less than half a GB, do not accept value to avoid fatal error
 
+                System.out.println("Please provide at least 0.5 gigabytes of memory.");
+                output = 0;
+
+            }
         }
 
         System.out.println("\n** Your server will use " + memory + " gigabytes of ram when active **");
@@ -349,7 +356,7 @@ public class Main {
 
             if (!input.equalsIgnoreCase("DONE"))
                 output.append(input).append("\\n");
-            else
+            else if (!output.isEmpty())
                 output = new StringBuilder(output.substring(0, output.length() - 2)); //remove the final extra \n
 
         }
@@ -363,7 +370,8 @@ public class Main {
 
     private static void turnOnServerPrompt(Scanner console, String serverFolderName, OperatingSystem os) {
 
-        System.out.print("\nWould you like to turn your server on now? (y/n)");
+        System.out.println("^^ Please read all the above text before proceeding ^^");
+        System.out.print("Would you like to turn your server on now? (y/n): ");
 
         String input = console.nextLine();
 
@@ -444,8 +452,7 @@ public class Main {
         boolean isLargeAlloc = ramAlloc >= 12 * BINARY_FACTOR;
         System.out.println(ramAlloc + "MB allocated to the server");
 
-        // base command for running the server
-        String baseCommand = "java -Xms" + ramAlloc + "M -Xmx" + ramAlloc + "M --add-modules=jdk.incubator.vector -XX:+UseG1GC " +
+        String runBatContent = "java -Xms" + ramAlloc + "M -Xmx" + ramAlloc + "M --add-modules=jdk.incubator.vector -XX:+UseG1GC " +
                 "-XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions " +
                 "-XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 " +
                 "-XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 " +
@@ -453,19 +460,6 @@ public class Main {
                 "-XX:MaxTenuringThreshold=1 -Dusing.aikars.flags=https://mcflags.emc.gs -Daikars.new.flags=true " +
                 "-XX:G1NewSizePercent=" + (isLargeAlloc ? 40 : 30) + " -XX:G1MaxNewSizePercent=" + (isLargeAlloc ? 50 : 40) + " -XX:G1HeapRegionSize=" + (isLargeAlloc ? 16 : 8)
                 + "M -XX:G1ReservePercent=" + (isLargeAlloc ? 15 : 20) + " -jar " + jarName + (client.toString().equalsIgnoreCase("forge") ? " --installServer" : "");
-
-        // windows batch file content with eula check (closes the window once the EULA is generated)
-        String runBatContent = "@echo off\n" +
-                "echo Starting server...\n" +
-                "echo This window will automatically close once the EULA is generated.\n" +
-                baseCommand + "\n" +
-                ":loop\n" +
-                "timeout /t 1 >nul\n" +
-                "if exist eula.txt (\n" +
-                "    exit\n" +
-                ") else (\n" +
-                "    goto loop\n" +
-                ")";
 
         // create a run.bat file to start the server
         try {
@@ -478,17 +472,8 @@ public class Main {
 
         }
 
-        // linux shell script content with eula check (closes the window once the EULA is generated)
-        String runShContent = "#!/usr/bin/env sh\n" +
-                "echo \"Starting server...\"\n" +
-                "echo \"This window will automatically close once the EULA is generated.\"\n" +
-                baseCommand + "\n" +
-                "while true; do\n" +
-                "    sleep 1\n" +
-                "    if [ -f \"eula.txt\" ]; then\n" +
-                "        exit 0\n" +
-                "    fi\n" +
-                "done";
+        // run.sh file has the same contents as run.bat, but the first line is "#!/usr/bin/env sh" to make it executable on Linux
+        String runShContent = "#!/usr/bin/env sh\n" + runBatContent.replace(".bat", ".sh");
 
         try {
 
@@ -521,20 +506,12 @@ public class Main {
         try {
 
             ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "start", "run.bat");
-            pb.directory(Paths.get(serverFolderName).toFile()); // set the working directory to the server folder so the JAR file can be found
-            Process process = pb.start(); // start the process
-
-            int exitCode = process.waitFor(); // wait for the process to finish
-            System.out.println("Exit code: " + exitCode); // output the exit code
+            pb.directory(Paths.get(serverFolderName).toFile());
+            pb.start();
 
         } catch (IOException e) {
 
             System.err.println("Error running run.bat: " + e.getMessage()); // output error message
-
-        } catch (InterruptedException e) {
-
-            Thread.currentThread().interrupt(); // restore the interrupted status
-            System.err.println("Process was interrupted: " + e.getMessage()); // output error message
 
         }
     }
@@ -546,19 +523,12 @@ public class Main {
 
             ProcessBuilder pb = new ProcessBuilder("sh", "run.sh");
             pb.directory(Paths.get(serverFolderName).toFile()); // set the working directory to the server folder so the JAR file can be found
-            Process process = pb.start(); // start the process
-
-            int exitCode = process.waitFor(); // wait for the process to finish
-            System.out.println("Exit code: " + exitCode); // output the exit code
+            pb.inheritIO(); // inherit the IO streams so the output is displayed in the console
+            pb.start(); // start the process
 
         } catch (IOException e) {
 
             System.err.println("Error running run.sh: " + e.getMessage()); // output error message
-
-        } catch (InterruptedException e) {
-
-            Thread.currentThread().interrupt(); // restore the interrupted status
-            System.err.println("Process was interrupted: " + e.getMessage()); // output error message
 
         }
     }
