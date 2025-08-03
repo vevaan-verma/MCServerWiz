@@ -8,20 +8,24 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 
 public class Main {
 
+    // region Class constants
     private static final char[] FORBIDDEN_FILE_CHARS = {'<', '>', ':', '"', '/', '\\', '|', '?', '*'};
     private static final String[] FORBIDDEN_FILE_NAMES = {"CON", "PRN", "AUX", "NUL",
             "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM0",
             "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", "LPT0"};
     private static final int BINARY_FACTOR = 1024;
 
+    //endregion
     public static void main(String[] args) {
 
+        // region Intro
         // MCServerWiz
         System.out.println("\n********************************************");
         System.out.println("Ⅰ         Welcome to MCServerWiz!         Ⅰ");
@@ -32,6 +36,10 @@ public class Main {
         System.out.println("\tWe are not affiliated with these sites.\n");
 
         System.out.println("Please do not type unless prompted.\n");
+
+        //endregion
+
+        // region Initialization, OS detection
 
         Scanner console = new Scanner(System.in);
 
@@ -56,51 +64,75 @@ public class Main {
 
         }
 
+        //endregion
+
+        // region Configure server and install/create files
+
         String serverFolderName = getServerFolderName(console);
         Client client = getClient(console);
         String version = getVersion(console, client);
         int ramAlloc = getRamAlloc(console);
-
         String jarName = getServerJar(client, version, serverFolderName);
         createRunFiles(jarName, client, serverFolderName, ramAlloc, os);
 
+        //endregion
+
+        //region EULA + MOTD
+
         // run the server based on the operating system
-        if (os == OperatingSystem.Windows) {
+        // skip the first run if the EULA is not required, as it will open the gui
+        if(versionEnforcesEULA(version)) {
 
-            runBat(serverFolderName);
+            if (os == OperatingSystem.Windows) {
 
-        } else if (os == OperatingSystem.Linux || os == OperatingSystem.MacOS) {
+                runBat(serverFolderName);
 
-            runSh(serverFolderName);
+            } else if (os == OperatingSystem.Linux || os == OperatingSystem.MacOS) {
 
-        } else {
+                runSh(serverFolderName);
 
-            System.out.println("You will have to run the run.sh or run.bat file manually.");
-            System.out.println("Press enter when you have done so. If you continue without running the server, the program will not work as expected.");
-            console.nextLine();
+            } else {
+
+                System.out.println("You will have to run the run.sh or run.bat file manually.");
+                System.out.println("Press enter when you have done so. If you continue without running the server, the program will not work as expected.");
+                console.nextLine();
+
+            }
+
+            if (client == Client.forge) {
+
+                printCompletedMessageForge();
+                return;
+
+            }
+
+            if (!waitForEULA(serverFolderName)) {
+
+                System.out.println("EULA file was not created in time. Please try again later.");
+                System.exit(1); // exit the program if the EULA file was not created
+
+            }
+
+            acceptEula(console, serverFolderName);
+
+        }
+        else {
+
+            System.out.println("\nGood news: you are running an older version of minecraft, so you get to skip the EULA step\n");
 
         }
 
-        if (client == Client.forge) {
-
-            printCompletedMessageForge();
-            return;
-
-        }
-
-        if (!waitForEULA(serverFolderName)) {
-
-            System.out.println("EULA file was not created in time. Please try again later.");
-            System.exit(1); // exit the program if the EULA file was not created
-
-        }
-
-        acceptEula(console, serverFolderName);
         setMOTD(getMOTD(console), serverFolderName);
+
+        //endregion
+
+        //region Complete
 
         printCompletedMessage();
 
         turnOnServerPrompt(console, serverFolderName, os);
+
+        //endregion
 
     }
 
@@ -270,7 +302,7 @@ public class Main {
     private static boolean waitForEULA(String serverFolderName) {
 
         System.out.println("\n-- Step 5: EULA --");
-        System.out.println("Waiting for the EULA to be created by the server...");
+        System.out.println("Waiting for the EULA to be created by the server... check console for errors");
 
         int timeoutSeconds = 60;
         int waited = 0;
@@ -364,13 +396,48 @@ public class Main {
         return output.toString();
 
     }
+
+    private static void setMOTD(String motd, String serverFolderName) {
+
+        // go to server.properties file and find the line that starts with "motd=", set it to the provided motd if it exists or create it if it does not exist
+        try {
+
+            Path path = Paths.get(serverFolderName, "server.properties");
+            List<String> lines = Files.readAllLines(path);
+
+            boolean motdSet = false;
+
+            for (int i = 0; i < lines.size(); i++) {
+
+                if (lines.get(i).trim().startsWith("motd=")) {
+
+                    lines.set(i, "motd=" + motd);
+                    motdSet = true;
+                    break;
+
+                }
+            }
+
+            if (!motdSet)
+                lines.add("motd=" + motd); // add the motd line if it does not exist
+
+            Files.write(path, lines); // write the modified lines back to the file
+            System.out.println("^^ MOTD set! ^^");
+
+        } catch (IOException e) {
+
+            System.err.println("Error writing to server.properties: " + e.getMessage());
+
+        }
+    }
+
+
     // endregion
 
-    //region Turn on server prompt
+    //region Final step: prompt to turn server on
 
     private static void turnOnServerPrompt(Scanner console, String serverFolderName, OperatingSystem os) {
 
-        System.out.println("^^ Please read all the above text before proceeding ^^");
         System.out.print("Would you like to turn your server on now? (y/n): ");
 
         String input = console.nextLine();
@@ -386,10 +453,14 @@ public class Main {
                 System.out.println("Operating system not recognized: " + os + ". You will have to run the run.sh or run.bat file manually.");
 
         }
+
+        System.out.println("\nEnjoy your server (and \"have fun\" port forwarding)!");
+
     }
 
     //endregion
 
+    //region Utilities, files, and networking
     private static boolean testVersion(Client client, String version) {
 
         // url: https://mcutils.com/api/server-jars/{client}/{version}/exists
@@ -525,6 +596,7 @@ public class Main {
         try {
 
             ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "start", "run.bat");
+
             pb.directory(Paths.get(serverFolderName).toFile());
             pb.start();
 
@@ -541,6 +613,7 @@ public class Main {
         try {
 
             ProcessBuilder pb = new ProcessBuilder("sh", "run.sh");
+
             pb.directory(Paths.get(serverFolderName).toFile()); // set the working directory to the server folder so the JAR file can be found
             pb.inheritIO(); // inherit the IO streams so the output is displayed in the console
             pb.start(); // start the process
@@ -552,40 +625,43 @@ public class Main {
         }
     }
 
-    private static void setMOTD(String motd, String serverFolderName) {
+    private static boolean versionEnforcesEULA(String version){
 
-        // go to server.properties file and find the line that starts with "motd=", set it to the provided motd if it exists or create it if it does not exist
-        try {
+        List<Integer> parsedVersion = new ArrayList<Integer>();
+        int parsedVersionIdx = 0;
+        int nextDotIdx = 0;
 
-            Path path = Paths.get(serverFolderName, "server.properties");
-            List<String> lines = Files.readAllLines(path);
+        String versionDecomp = version;
 
-            boolean motdSet = false;
+        while(!versionDecomp.isEmpty()){
 
-            for (int i = 0; i < lines.size(); i++) {
+            nextDotIdx = versionDecomp.indexOf(".");
 
-                if (lines.get(i).trim().startsWith("motd=")) {
+            if(nextDotIdx != -1){
 
-                    lines.set(i, "motd=" + motd);
-                    motdSet = true;
-                    break;
+                int versionDigit = Integer.parseInt(versionDecomp.substring(0,nextDotIdx));
+                parsedVersion.add(parsedVersionIdx, versionDigit);
+                versionDecomp = versionDecomp.substring(nextDotIdx + 1);
+                parsedVersionIdx++;
 
-                }
+            }
+            else{
+
+                parsedVersion.add(parsedVersionIdx, Integer.parseInt((versionDecomp)));
+                versionDecomp = "";
+
             }
 
-            if (!motdSet)
-                lines.add("motd=" + motd); // add the motd line if it does not exist
-
-            Files.write(path, lines); // write the modified lines back to the file
-            System.out.println("^^ MOTD set! ^^");
-
-        } catch (IOException e) {
-
-            System.err.println("Error writing to server.properties: " + e.getMessage());
-
         }
+
+        // versions 1.7.10 and newer return "true"
+        return (parsedVersion.size() == 3 && parsedVersion.get(1) == 7  && parsedVersion.get(2) == 10) || parsedVersion.get(1) > 7 ;
+
     }
 
+    //endregion
+
+    // region Printing
     private static void printCompletedMessage() {
 
         System.out.println("\n** Your server has been created successfully! **\n");
@@ -602,13 +678,15 @@ public class Main {
 
         printPublicIP();
 
+        System.out.println("\n^^ Please read all the above text before proceeding ^^");
+
     }
 
     private static void printCompletedMessageForge() {
 
         System.out.println("\n** Your server installer has been downloaded successfully **\n");
-        System.out.println("You must run the installer \".jar\" file to complete setup. (Sorry, Forge is annoying)");
-        System.out.println("Make sure to select \"Server\" in the installer.\n");
+        System.out.println("Wait for Forge to finish installing. Afterwards, open \"run.bat\" (use \"run.sh\" if on Linux or Mac).");
+        System.out.println("You will be prompted to agree to the EULA. Open \"eula.txt\" and set \"eula=true\".\n");
 
         System.out.println("Once setup is complete, open \"run.bat\" to turn your server on (use \"run.sh\" if on Linux or Mac).");
         System.out.println("When your server starts, a GUI will open where you can monitor your server and type commands.");
@@ -621,6 +699,8 @@ public class Main {
         System.out.println("\thttps://minecraft.wiki/w/Server.properties");
 
         printPublicIP();
+
+        System.out.println("\n^^ Please read all the above text before proceeding ^^");
 
     }
 
@@ -661,7 +741,10 @@ public class Main {
         }
 
         System.out.println("Be careful when handing out your IP.");
-        System.out.println("\nYou MUST port forward your router to allow users from other networks to join your server.\n");
+        System.out.println("\nYou MUST port forward your router to allow users from other networks to join your server.");
 
     }
+
+    // endregion
+
 }
