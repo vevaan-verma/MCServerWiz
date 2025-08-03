@@ -15,14 +15,14 @@ import java.util.Set;
 
 public class Main {
 
-    // region Class constants
+    // region Class Constants
     private static final char[] FORBIDDEN_FILE_CHARS = {'<', '>', ':', '"', '/', '\\', '|', '?', '*'};
     private static final String[] FORBIDDEN_FILE_NAMES = {"CON", "PRN", "AUX", "NUL",
             "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM0",
             "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", "LPT0"};
     private static final int BINARY_FACTOR = 1024;
+    // endregion
 
-    //endregion
     public static void main(String[] args) {
 
         // region Intro
@@ -36,11 +36,9 @@ public class Main {
         System.out.println("\tWe are not affiliated with these sites.\n");
 
         System.out.println("Please do not type unless prompted.\n");
-
-        //endregion
+        // endregion
 
         // region Initialization, OS detection
-
         Scanner console = new Scanner(System.in);
 
         String osStr = System.getProperty("os.name").toLowerCase();
@@ -63,25 +61,21 @@ public class Main {
             console.nextLine();
 
         }
-
-        //endregion
+        // endregion
 
         // region Configure server and install/create files
-
         String serverFolderName = getServerFolderName(console);
         Client client = getClient(console);
         String version = getVersion(console, client);
         int ramAlloc = getRamAlloc(console);
         String jarName = getServerJar(client, version, serverFolderName);
         createRunFiles(jarName, client, serverFolderName, ramAlloc, os);
+        // endregion
 
-        //endregion
-
-        //region EULA + MOTD
-
+        // region EULA + MOTD
         // run the server based on the operating system
         // skip the first run if the EULA is not required, as it will open the gui
-        if(versionEnforcesEULA(version)) {
+        if (versionEnforcesEULA(version)) {
 
             if (os == OperatingSystem.Windows) {
 
@@ -115,24 +109,20 @@ public class Main {
 
             acceptEula(console, serverFolderName);
 
-        }
-        else {
+        } else {
 
             System.out.println("\nGood news: you are running an older version of minecraft, so you get to skip the EULA step\n");
 
         }
 
         setMOTD(getMOTD(console), serverFolderName);
+        // endregion
 
-        //endregion
-
-        //region Complete
-
+        // region Complete
         printCompletedMessage();
 
         turnOnServerPrompt(console, serverFolderName, os);
-
-        //endregion
+        // endregion
 
     }
 
@@ -151,8 +141,6 @@ public class Main {
 
             if (isFileNameValid(input))
                 output = input;
-            else
-                System.out.println("Your folder name contains one or more invalid chars, or the name is not allowed by Windows. Please try again");
 
         }
 
@@ -163,16 +151,58 @@ public class Main {
 
     private static boolean isFileNameValid(String name) {
 
+        name = name.trim(); // trim the name to remove leading and trailing whitespace
+
+        // check if the name is empty
+        if (name.isEmpty()) {
+
+            System.out.println("Your folder name cannot be empty, please try again");
+            return false;
+
+        }
+
+        // check if the name is too long
+        if (name.length() > 255) {
+
+            System.out.println("Your folder name is too long, please try again with a shorter name");
+            return false;
+
+        }
+
         // check forbidden chars for inclusion
-        for (int i = 0; i < name.length(); i++)
-            for (char c : FORBIDDEN_FILE_CHARS)
-                if (name.toLowerCase().charAt(i) == c)
+        for (int i = 0; i < name.length(); i++) {
+
+            for (char c : FORBIDDEN_FILE_CHARS) {
+
+                if (name.toLowerCase().charAt(i) == c) {
+
+                    System.out.println("Your folder name contains one or more invalid characters, please try again");
                     return false;
 
+                }
+            }
+        }
+
         // check forbidden names for insensitive equality
-        for (String str : FORBIDDEN_FILE_NAMES)
-            if (name.equalsIgnoreCase(str))
+        for (String str : FORBIDDEN_FILE_NAMES) {
+
+            if (name.equalsIgnoreCase(str)) {
+
+                System.out.println("Your folder name cannot be \"" + str + "\", please try again");
                 return false;
+
+            }
+        }
+
+        // check if the folder already exists
+        Path path = Paths.get(name);
+
+        if (Files.exists(path)) {
+
+            System.out.println("A folder with that name already exists, please try again with a different name");
+            return false;
+
+        }
 
         return true;
 
@@ -430,12 +460,9 @@ public class Main {
 
         }
     }
-
-
     // endregion
 
-    //region Final step: prompt to turn server on
-
+    // region Step 7: Turning on the server
     private static void turnOnServerPrompt(Scanner console, String serverFolderName, OperatingSystem os) {
 
         System.out.print("Would you like to turn your server on now? (y/n): ");
@@ -457,10 +484,9 @@ public class Main {
         System.out.println("\nEnjoy your server (and \"have fun\" port forwarding)!");
 
     }
+    // endregion
 
-    //endregion
-
-    //region Utilities, files, and networking
+    // region Utilities, files, and networking
     private static boolean testVersion(Client client, String version) {
 
         // url: https://mcutils.com/api/server-jars/{client}/{version}/exists
@@ -625,7 +651,7 @@ public class Main {
         }
     }
 
-    private static boolean versionEnforcesEULA(String version){
+    private static boolean versionEnforcesEULA(String version) {
 
         List<Integer> parsedVersion = new ArrayList<Integer>();
         int parsedVersionIdx = 0;
@@ -633,19 +659,18 @@ public class Main {
 
         String versionDecomp = version;
 
-        while(!versionDecomp.isEmpty()){
+        while (!versionDecomp.isEmpty()) {
 
             nextDotIdx = versionDecomp.indexOf(".");
 
-            if(nextDotIdx != -1){
+            if (nextDotIdx != -1) {
 
-                int versionDigit = Integer.parseInt(versionDecomp.substring(0,nextDotIdx));
+                int versionDigit = Integer.parseInt(versionDecomp.substring(0, nextDotIdx));
                 parsedVersion.add(parsedVersionIdx, versionDigit);
                 versionDecomp = versionDecomp.substring(nextDotIdx + 1);
                 parsedVersionIdx++;
 
-            }
-            else{
+            } else {
 
                 parsedVersion.add(parsedVersionIdx, Integer.parseInt((versionDecomp)));
                 versionDecomp = "";
@@ -655,11 +680,10 @@ public class Main {
         }
 
         // versions 1.7.10 and newer return "true"
-        return (parsedVersion.size() == 3 && parsedVersion.get(1) == 7  && parsedVersion.get(2) == 10) || parsedVersion.get(1) > 7 ;
+        return (parsedVersion.size() == 3 && parsedVersion.get(1) == 7 && parsedVersion.get(2) == 10) || parsedVersion.get(1) > 7;
 
     }
-
-    //endregion
+    // endregion
 
     // region Printing
     private static void printCompletedMessage() {
@@ -744,7 +768,6 @@ public class Main {
         System.out.println("\nYou MUST port forward your router to allow users from other networks to join your server.");
 
     }
-
     // endregion
 
 }
