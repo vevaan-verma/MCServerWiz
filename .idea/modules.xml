@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/Minecraft Server Wizard.iml" filepath="$PROJECT_DIR$/Minecraft Server Wizard.iml" />
+      <module fileurl="file://$PROJECT_DIR$/MCServerWiz.iml" filepath="$PROJECT_DIR$/MCServerWiz.iml" />
     </modules>
   </component>
 </project>

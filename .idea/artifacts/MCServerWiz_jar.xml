@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="MCServerWiz:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/MCServerWiz_jar</output-path>
+    <root id="archive" name="MCServerWiz.jar">
+      <element id="module-output" name="MCServerWiz" />
+    </root>
+  </artifact>
+</component>
