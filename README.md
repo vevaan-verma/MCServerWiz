@@ -1,7 +1,7 @@
 # Minecraft Server Wizard (MCServerWiz)
 *Online Minecraft made easy*
 
-~~*Network settings not included*~~
+~~Network settings not included~~
 
 ## About
 
