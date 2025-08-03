@@ -38,3 +38,5 @@ When hosting a server, it is reccomended for your computer to have at least a de
 *(The trick above is a good way to squeeze a bit of performance out of apps. It works great on Minecraft!)* 
 
 Server files are accessed from  https://mcutils.com/. (*We are not affiliated with this site.*)
+
+Credit to [lflowers01's MC Server Wizard](https://github.com/lflowers01/mc-server-wizard). We were unaware that this app, identical in both purpose and name to ours, existed at all until we finished ours. Feel free to check it out if our less advanced app doesn't meet your needs... 
