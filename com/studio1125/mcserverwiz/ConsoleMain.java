@@ -1,3 +1,5 @@
+package studio1125.mcserverwiz;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -604,7 +606,7 @@ public class ConsoleMain {
             } else {
 
                 // set the file as executable for Linux and macOS
-                Set<PosixFilePermission> perms = Set.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_READ);
+                Set<PosixFilePermission> perms = Set.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE);
                 Files.setPosixFilePermissions(path, perms);
                 System.out.println("run.sh created and set as executable");
 
