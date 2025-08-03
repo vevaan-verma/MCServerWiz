@@ -8,9 +8,7 @@
 
 ## About
 
-MCServerWiz is a console utility that guides a user through setting up a ready-to-run, dedicated Minecraft Java localhost server quickly and easily.
-
-No prior experience in Minecraft servers is required. MCServerWiz holds the user's hand through the process as it briefly explains each step and points the user to helpful resources. 
+MCServerWiz is a console utility that guides a user through setting up a ready-to-run, dedicated Minecraft Java localhost server quickly and easily. No prior experience in Minecraft servers is required: MCServerWiz holds the user's hand through the process as it briefly explains each step and points the user to helpful resources. 
 
 MCServerWiz automatically installs server.jar files from the internet as per the user's requested client and Minecraft version, and creates a customized run.bat (+run.sh for MacOS and Linux) file using [Aikar's Flags](https://flags.sh/) and the user's requested memory allocation. The user is also granted the ability to name the destination folder and set a server MOTD. 
 
