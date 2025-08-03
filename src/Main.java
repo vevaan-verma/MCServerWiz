@@ -452,7 +452,7 @@ public class Main {
         boolean isLargeAlloc = ramAlloc >= 12 * BINARY_FACTOR;
         System.out.println(ramAlloc + "MB allocated to the server");
 
-        String runBatContent = "java -Xms" + ramAlloc + "M -Xmx" + ramAlloc + "M --add-modules=jdk.incubator.vector -XX:+UseG1GC " +
+        String baseCommand = "java -Xms" + ramAlloc + "M -Xmx" + ramAlloc + "M --add-modules=jdk.incubator.vector -XX:+UseG1GC " +
                 "-XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions " +
                 "-XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 " +
                 "-XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 " +
@@ -460,6 +460,17 @@ public class Main {
                 "-XX:MaxTenuringThreshold=1 -Dusing.aikars.flags=https://mcflags.emc.gs -Daikars.new.flags=true " +
                 "-XX:G1NewSizePercent=" + (isLargeAlloc ? 40 : 30) + " -XX:G1MaxNewSizePercent=" + (isLargeAlloc ? 50 : 40) + " -XX:G1HeapRegionSize=" + (isLargeAlloc ? 16 : 8)
                 + "M -XX:G1ReservePercent=" + (isLargeAlloc ? 15 : 20) + " -jar " + jarName + (client.toString().equalsIgnoreCase("forge") ? " --installServer" : "");
+
+        // Windows run.bat; will close when done
+        String runBatContent = "@echo off\n" +
+                "echo Starting server...\n" +
+                baseCommand + "\n" +
+                "if exist eula.txt (\n" +
+                "   exit\n" +
+                ") else (\n" +
+                "   timeout /t 5 >nul\n" +
+                "   exit\n" +
+                ")";
 
         // create a run.bat file to start the server
         try {
@@ -472,8 +483,16 @@ public class Main {
 
         }
 
-        // run.sh file has the same contents as run.bat, but the first line is "#!/usr/bin/env sh" to make it executable on Linux
-        String runShContent = "#!/usr/bin/env sh\n" + runBatContent.replace(".bat", ".sh");
+        // Linux/Mac run.sh; will close when done
+        String runShContent = "#!/bin/sh\n" +
+                "echo \"Starting server...\"\n" +
+                baseCommand + "\n" +
+                "if [ -f \"eula.txt\" ]; then\n" +
+                "   exit 0\n" +
+                "else\n" +
+                "   sleep 5\n" +
+                "   exit 0\n" +
+                "fi";
 
         try {
 

@@ -26,5 +26,5 @@ Only tested on Windows 11 ~~and Ubuntu 22.04 LTS~~. Both a run.bat and run.sh ar
 
 ## Notes
 
-Server files are accessed from  https://mcutils.com/ 
+Server files are accessed from  https://mcutils.com/
 *We are not affiliated with this site.* 
