@@ -744,7 +744,7 @@ public class Main {
 
         // region Set Info Text Based on Client
         if (client == Client.forge)
-            infoArea.setText("Your server installer has been downloaded successfully\n\n" +
+            infoArea.setText("** Your server installer has been downloaded successfully **\n\n" +
                     "Wait for Forge to finish installing. Afterwards, open \"run.bat\" (use \"run.sh\" if on Linux or Mac).\n" +
                     "You will be prompted to agree to the EULA. Open \"eula.txt\" and set \"eula=true\".\n\n" +
                     "Once setup is complete, open \"run.bat\" to turn your server on (use \"run.sh\" if on Linux or Mac).\n" +
@@ -756,21 +756,22 @@ public class Main {
                     "\tBe careful when doing this, it is advanced and requires changing router settings.\n\n" +
                     "Check out this guide to learn how to configure your server settings (render distance, seed, MOTD, etc.):\n" +
                     "\thttps://minecraft.wiki/w/Server.properties\n\n" +
-                    getIpInfoText());
+                    getIpInfoText() +
+                    "\n^^ Please read all the above text before proceeding ^^");
         else
-            infoArea.setText("Your server has been created successfully!\n\n" +
-                    "A GUI will open where you can monitor your server and type commands.\n" +
-                    "Type \"/op [username]\" to grant a user admin privileges (ability to type commands in game)\n" +
-                    "To allow users on other networks to join your server, you will need to port forward your router.\n" +
-                    "\tCheck out this guide to port forwarding: https://www.wikihow.com/Portforward-Minecraft\n" +
-                    "\tBe careful when doing this, it is advanced and requires changing router settings.\n\n" +
-                    "Check out this guide to learn how to configure your server settings (render distance, seed, MOTD, etc.):\n" +
-                    "\thttps://minecraft.wiki/w/Server.properties\n\n" +
-                    "Typing \"stop\" stops your server safely.\n" +
-                    "Open the \"run.bat\" file to turn your server on later (use \"run.sh\" if on Linux or Mac).\n\n" +
-                    getIpInfoText() + "\n" +
-                    "Be careful when handing out your IP.\n" +
-                    "You MUST port forward your router to allow users from other networks to join your server.");
+            infoArea.setText(
+                    "** Your server has been created successfully! **\n\n" +
+                            "A GUI will open where you can monitor your server and type commands.\n" +
+                            "Type \"/op [username]\" to grant a user admin privileges (ability to type commands in game)\n" +
+                            "To allow users on other networks to join your server, you will need to port forward your router.\n" +
+                            "\tCheck out this guide to port forwarding: https://www.wikihow.com/Portforward-Minecraft\n" +
+                            "\tBe careful when doing this, it is advanced and requires changing router settings.\n\n" +
+                            "Check out this guide to learn how to configure your server settings (render distance, seed, MOTD, etc.):\n" +
+                            "\thttps://minecraft.wiki/w/Server.properties\n\n" +
+                            "Typing \"stop\" stops your server safely.\n" +
+                            "Open the \"run.bat\" file to turn your server on later (use \"run.sh\" if on Linux or Mac).\n\n" +
+                            getIpInfoText() +
+                            "\n^^ Please read all the above text before proceeding ^^");
         // endregion
 
         panel.add(buttonPanel, BorderLayout.SOUTH);
