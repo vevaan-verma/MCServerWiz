@@ -1,4 +1,4 @@
-package studio1125.mcserverwiz;
+package com.studio1125;
 
 import javax.swing.*;
 import java.awt.*;
@@ -71,7 +71,7 @@ public class Main {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 600);
         frame.setMinimumSize(new Dimension(600, 500));
-        frame.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("icon.png")));
+        //frame.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("icon.png")));
         // endregion
 
         // region Main Panel Setup
@@ -91,7 +91,7 @@ public class Main {
         createCompletionPanel();
         // endregion
 
-        // Show welcome panel first
+        // show welcome panel first
         cardLayout.show(mainPanel, "welcome");
 
         frame.setLocationRelativeTo(null);
@@ -433,6 +433,13 @@ public class Main {
         centerPanel.add(errorLabel, gbc);
         // endregion
 
+        // region Waiting Label
+        JLabel waitingLabel = new JLabel("Waiting for EULA...", SwingConstants.CENTER);
+        waitingLabel.setForeground(new Color(0, 100, 0));  // dark green color
+        waitingLabel.setVisible(false);
+        centerPanel.add(waitingLabel, gbc);
+        // endregion
+
         // region Next Button Action
         JButton nextButton = new JButton("Next");
         nextButton.addActionListener(e -> {
@@ -448,43 +455,53 @@ public class Main {
 
             ramAlloc = (int) (memory * BINARY_FACTOR);
 
-            // Download server jar and create run files
-            jarName = getServerJar(client, version, serverFolderName);
-            createRunFiles(jarName, client, serverFolderName, ramAlloc, os);
+            // disable button and show waiting text
+            nextButton.setEnabled(false);
+            waitingLabel.setVisible(true);
+            panel.revalidate();
+            panel.repaint();
 
-            if (versionEnforcesEULA(version)) {
+            // run in background thread to keep UI responsive
+            new Thread(() -> {
 
-                if (client == Client.forge) {
+                // download server jar and create run files
+                jarName = getServerJar(client, version, serverFolderName);
+                createRunFiles(jarName, client, serverFolderName, ramAlloc, os);
 
-                    cardLayout.show(mainPanel, "completion");
+                SwingUtilities.invokeLater(() -> {
 
-                } else {
+                    if (versionEnforcesEULA(version)) {
 
-                    if (os == OperatingSystem.Windows) {
+                        if (client == Client.forge) {
 
-                        runBat(serverFolderName);
+                            cardLayout.show(mainPanel, "completion");
 
-                    } else if (os == OperatingSystem.Linux || os == OperatingSystem.MacOS) {
+                        } else {
 
-                        runSh(serverFolderName);
+                            if (os == OperatingSystem.Windows)
+                                runBat(serverFolderName);
+                            else if (os == OperatingSystem.Linux || os == OperatingSystem.MacOS)
+                                runSh(serverFolderName);
+
+                            if (!waitForEULA(serverFolderName)) {
+
+                                JOptionPane.showMessageDialog(frame, "EULA file was not created in time. Please try again later.", "Error", JOptionPane.ERROR_MESSAGE);
+                                nextButton.setEnabled(true);
+                                waitingLabel.setVisible(false);
+                                return;
+
+                            }
+
+                            cardLayout.show(mainPanel, "eula");
+
+                        }
+                    } else {
+
+                        cardLayout.show(mainPanel, "motd");
 
                     }
-
-                    if (!waitForEULA(serverFolderName)) {
-
-                        JOptionPane.showMessageDialog(frame, "EULA file was not created in time. Please try again later.", "Error", JOptionPane.ERROR_MESSAGE);
-                        return;
-
-                    }
-
-                    cardLayout.show(mainPanel, "eula");
-
-                }
-            } else {
-
-                cardLayout.show(mainPanel, "motd");
-
-            }
+                });
+            }).start();
         });
         // endregion
 
