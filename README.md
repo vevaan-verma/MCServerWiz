@@ -12,7 +12,7 @@ MCServerWiz is a console utility that guides a user through setting up a ready-t
 
 MCServerWiz automatically installs server.jar files from the internet as per the user's requested client and Minecraft version, and creates a customized run.bat (+run.sh for macOS and Linux) file using [Aikar's Flags](https://flags.sh/) and the user's requested memory allocation. The user is also granted the ability to name the destination folder and set a server MOTD. 
 
-Please note that **the application does not port forward your router** or change any firewall settings; this must be done manually to allow users from outside networks to join the server. **_If you do not port forward your router/device, your server will be LAN-only._** You can learn how to port forward [here](https://www.wikihow.com/Portforward-Minecraft#:~:text=This%20wikiHow%20teaches).
+Please note that **the application does not port forward your router** or change any firewall settings; this must be done manually to allow users from outside networks to join the server. **_If you do not port forward your router/device, your server will be LAN-only._** You can learn how to port forward [here](https://www.wikihow.com/Portforward-Minecraft#:~:text=This%20wikiHow%20teaches). *Pro tip: setting a static IP is totally optional. If the server is just for you and your friends, simply give them your new IP when the old one stops working.*
 
 ## Compatibility 
 
@@ -22,9 +22,20 @@ Only tested on Windows 11 ~~and Ubuntu 22.04 LTS~~. Both a run.bat and run.sh ar
 
 ## Known Issues
 
-- "Unsupported Java detected." This happens on occasion when using Paper. If you get this error message, download the necessary version of Java and try again. 
-- Unable to join the server. This is likely because the player is attempting to join from an outside network, but the server has not been port forwarded properly. Verify router settings and consider opening the ports on your device's firewall. 
-- Took to long to create the EULA. Often times, simply trying again will resolve the issue. Otherwise, check the console for errors. If the issue persists, consider attempting a manual setup.
+**Issue: "Unsupported Java detected."**
+
+Solution: This happens on occasion when using Paper. If you get this error message, download the necessary version of Java and try again. 
+
+**Issue: Unable to join the server.** 
+
+Solution 1: This is likely because the player is attempting to join from an outside network, but the server has not been port forwarded properly. Verify router settings and consider opening the ports on your device's firewall. 
+
+Solution 2: Double-check your IP, as it may have changed. If this was the case, and the issue becomes frequent, consider setting a static IP.
+
+-
+**Issue: Took to long to create the EULA.**
+
+Solution: Often times, simply trying again will resolve the issue. Otherwise, check the console for errors. If the issue persists, consider attempting a manual setup.
 
 ## Notes
 
