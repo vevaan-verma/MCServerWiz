@@ -32,6 +32,8 @@ Only tested on Windows 11 ~~and Ubuntu 22.04 LTS~~. Both a run.bat and run.sh ar
 
 - Alternatively, double-check your IP, as it may have changed. If this was the case, and the issue becomes frequent, consider setting a static IP.
 
+- Make sure devices on the server's network use the server's *local IP,* and devices outside the server's network use the server's *public IP.*
+
 **Took to long to create the EULA.**
 
 - Often times, simply trying again will resolve the issue. Otherwise, check the console for errors. If the issue persists, consider attempting a manual setup.
