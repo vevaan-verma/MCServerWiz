@@ -8,7 +8,7 @@
 
 ## About
 
-MCServerWiz is a console utility that guides a user through setting up a ready-to-run, dedicated Minecraft Java localhost server quickly and easily. No prior experience in Minecraft servers is required: MCServerWiz holds the user's hand through the process as it briefly explains each step and points the user to helpful resources. 
+MCServerWiz is a utility that guides a user through setting up a ready-to-run, dedicated Minecraft Java localhost server quickly and easily. No prior experience in Minecraft servers is required: MCServerWiz holds the user's hand through the process as it briefly explains each step and points the user to helpful resources. 
 
 MCServerWiz automatically installs server.jar files from the internet as per the user's requested client and Minecraft version, and creates a customized run.bat (+run.sh for macOS and Linux) file using [Aikar's Flags](https://flags.sh/) and the user's requested memory allocation. The user is also granted the ability to name the destination folder and set a server MOTD. 
 
@@ -22,20 +22,19 @@ Only tested on Windows 11 ~~and Ubuntu 22.04 LTS~~. Both a run.bat and run.sh ar
 
 ## Known Issues
 
-**Issue: "Unsupported Java detected."**
+**"Unsupported Java detected."**
 
-Solution: This happens on occasion when using Paper. If you get this error message, download the necessary version of Java and try again. 
+- This happens on occasion when using Paper. If you get this error message, download the necessary version of Java and try again. 
 
-**Issue: Unable to join the server.** 
+**Unable to join the server.** 
 
-Solution 1: This is likely because the player is attempting to join from an outside network, but the server has not been port forwarded properly. Verify router settings and consider opening the ports on your device's firewall. 
+- This is likely because the player is attempting to join from an outside network, but the server has not been port forwarded properly. Verify router settings and consider opening the ports on your device's firewall. 
 
-Solution 2: Double-check your IP, as it may have changed. If this was the case, and the issue becomes frequent, consider setting a static IP.
+- Alternatively, double-check your IP, as it may have changed. If this was the case, and the issue becomes frequent, consider setting a static IP.
 
--
-**Issue: Took to long to create the EULA.**
+**Took to long to create the EULA.**
 
-Solution: Often times, simply trying again will resolve the issue. Otherwise, check the console for errors. If the issue persists, consider attempting a manual setup.
+- Often times, simply trying again will resolve the issue. Otherwise, check the console for errors. If the issue persists, consider attempting a manual setup.
 
 ## Notes
 
