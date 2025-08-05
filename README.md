@@ -18,7 +18,7 @@ Please note that **the application does not port forward your router** or change
 
 Currently supports creating servers for Vanilla, Fabric, and Paper clients. Forge is also present, but requires manual setup. 
 
-Only tested on Windows 11 ~~and Ubuntu 22.04 LTS~~. Both a run.bat and run.sh are provided (run.bat is for Windows, and run.sh is for Linux distros + macOS).
+Only tested on Windows 11 and Ubuntu 22.04 LTS. Both a run.bat and run.sh are provided (run.bat is for Windows, and run.sh is for Linux distros + macOS).
 
 ## Known Issues
 
