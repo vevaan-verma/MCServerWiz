@@ -20,6 +20,8 @@ Currently supports creating servers for Vanilla, Fabric, and Paper clients. Forg
 
 Only tested on Windows 11 and Ubuntu 22.04 LTS. Both a run.bat and run.sh are provided (run.bat is for Windows, and run.sh is for Linux distros + macOS).
 
+As of v1, you may not be able to run the application if your system is not using Java 21. Sorry for the inconvenience.  
+
 ## Known Issues
 
 **"Unsupported Java detected."**
